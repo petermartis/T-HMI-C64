@@ -74,70 +74,64 @@ void Atari800Emu::setup() {
 
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Atari 800 XL Emulator starting...");
 
-  try {
-    // Initialize board driver
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating board driver...");
-    board = Board::create();
-    if (board) {
-      PlatformManager::getInstance().log(LOG_INFO, TAG, "Initializing board...");
-      board->init();
-    }
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "Board initialized");
-
-    // Allocate RAM
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "Allocating RAM...");
-    ram = new uint8_t[RAM_SIZE];
-    memset(ram, 0, RAM_SIZE);
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "RAM allocated");
-
-    // Initialize system with ROMs (use getters to get initialized ROM data)
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "Initializing system...");
-    sys.init(ram, getAtariOSRom(), getAtariBasicRom());
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "System initialized");
-
-    // Create keyboard driver
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating keyboard...");
-    sys.keyboard = Keyboard::create();
-    if (sys.keyboard) {
-      sys.keyboard->init();
-    }
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "Keyboard initialized");
-
-    // Create joystick driver
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating joystick...");
-    JoystickDriver *joystick = Joystick::create();
-    if (joystick) {
-      joystick->init();
-      sys.setJoystick(joystick);
-    }
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "Joystick initialized");
-
-    // Start CPU task on core 1
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting CPU task...");
-    PlatformManager::getInstance().startTask(
-        [this](void *param) { this->cpuCode(param); },
-        1,  // Core 1
-        5   // Priority
-    );
-
-    // Start keyboard scanner timer (every 8ms)
-    PlatformManager::getInstance().startIntervalTimer(
-        [this]() { this->intervalTimerScanKeyboardFunc(); },
-        8000  // 8ms
-    );
-
-    // Start profiling/battery timer (every 1 second)
-    PlatformManager::getInstance().startIntervalTimer(
-        [this]() { this->intervalTimerProfilingBatteryCheckFunc(); },
-        1000000  // 1 second
-    );
-
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "Setup complete");
-  } catch (const std::exception &e) {
-    PlatformManager::getInstance().log(LOG_ERROR, TAG, "Setup failed: %s", e.what());
-  } catch (...) {
-    PlatformManager::getInstance().log(LOG_ERROR, TAG, "Setup failed: unknown error");
+  // Initialize board driver
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating board driver...");
+  board = Board::create();
+  if (board) {
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "Initializing board...");
+    board->init();
   }
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Board initialized");
+
+  // Allocate RAM
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Allocating RAM...");
+  ram = new uint8_t[RAM_SIZE];
+  memset(ram, 0, RAM_SIZE);
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "RAM allocated");
+
+  // Initialize system with ROMs (use getters to get initialized ROM data)
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Initializing system...");
+  sys.init(ram, getAtariOSRom(), getAtariBasicRom());
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "System initialized");
+
+  // Create keyboard driver
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating keyboard...");
+  sys.keyboard = Keyboard::create();
+  if (sys.keyboard) {
+    sys.keyboard->init();
+  }
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Keyboard initialized");
+
+  // Create joystick driver
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating joystick...");
+  JoystickDriver *joystick = Joystick::create();
+  if (joystick) {
+    joystick->init();
+    sys.setJoystick(joystick);
+  }
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Joystick initialized");
+
+  // Start CPU task on core 1
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting CPU task...");
+  PlatformManager::getInstance().startTask(
+      [this](void *param) { this->cpuCode(param); },
+      1,  // Core 1
+      5   // Priority
+  );
+
+  // Start keyboard scanner timer (every 8ms)
+  PlatformManager::getInstance().startIntervalTimer(
+      [this]() { this->intervalTimerScanKeyboardFunc(); },
+      8000  // 8ms
+  );
+
+  // Start profiling/battery timer (every 1 second)
+  PlatformManager::getInstance().startIntervalTimer(
+      [this]() { this->intervalTimerProfilingBatteryCheckFunc(); },
+      1000000  // 1 second
+  );
+
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Setup complete");
 }
 
 void Atari800Emu::loop() {
