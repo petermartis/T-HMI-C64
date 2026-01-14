@@ -18,6 +18,7 @@
 #define ATARIDISPLAYDRIVER_H
 
 #include <cstdint>
+#include <cmath>
 
 /**
  * @brief Interface for Atari display drivers.

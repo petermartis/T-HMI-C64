@@ -18,6 +18,7 @@
 #include "board/BoardFactory.h"
 #include "joystick/JoystickFactory.h"
 #include "keyboard/KeyboardFactory.h"
+#include "platform/PlatformFactory.h"
 #include "platform/PlatformManager.h"
 #include "roms/atarixl_os.h"
 #include "roms/atari_basic.h"
@@ -45,8 +46,8 @@ void Atari800Emu::intervalTimerScanKeyboardFunc() {
 
 void Atari800Emu::intervalTimerProfilingBatteryCheckFunc() {
   // Update profiling info
-  if (showperfvalues) {
-    numofcyclespersecond = sys.numofcyclespersecond;
+  if (showperfvalues.load()) {
+    numofcyclespersecond.store(sys.numofcyclespersecond.load());
   }
 
   // Battery check every 60 seconds
@@ -68,10 +69,10 @@ void Atari800Emu::cpuCode(void *parameter) {
 }
 
 void Atari800Emu::setup() {
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Atari 800 XL Emulator starting...");
+  // Initialize platform first
+  PlatformManager::initialize(PlatformNS::create());
 
-  // Initialize platform
-  PlatformManager::initialize();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Atari 800 XL Emulator starting...");
 
   // Initialize board driver
   board = BoardFactory::create();
@@ -132,5 +133,5 @@ void Atari800Emu::loop() {
   PlatformManager::getInstance().waitMS(Config::REFRESHDELAY);
 
   // Update refresh counter
-  cntRefreshs = sys.antic.cntRefreshs;
+  cntRefreshs.store(sys.antic.cntRefreshs.load());
 }
