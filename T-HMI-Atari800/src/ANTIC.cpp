@@ -569,8 +569,9 @@ uint8_t ANTIC::nextScanline() {
 void ANTIC::refresh() {
   if (display) {
     display->drawBitmap(bitmap);
-    // Draw border with background color
-    display->drawFrame(gtia->getBackgroundColor());
+    // Draw border with background color (convert Atari color to RGB565)
+    uint16_t borderColor = palette.colorToRGB565(gtia->getBackgroundColor());
+    display->drawFrame(borderColor);
   }
   cntRefreshs++;
 }
