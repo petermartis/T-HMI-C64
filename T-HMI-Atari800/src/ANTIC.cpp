@@ -57,7 +57,7 @@ void ANTIC::init(uint8_t *ram, GTIA *gtia) {
   memset(bitmap, 0, ATARI_WIDTH * ATARI_HEIGHT * sizeof(uint16_t));
 
   // Create display driver
-  display = (AtariDisplayDriver *)DisplayFactory::create();
+  display = (AtariDisplayDriver *)Display::create();
   if (display) {
     display->init();
   }

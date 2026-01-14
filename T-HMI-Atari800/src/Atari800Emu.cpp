@@ -75,7 +75,7 @@ void Atari800Emu::setup() {
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Atari 800 XL Emulator starting...");
 
   // Initialize board driver
-  board = BoardFactory::create();
+  board = Board::create();
   if (board) {
     board->init();
   }
@@ -84,17 +84,17 @@ void Atari800Emu::setup() {
   ram = new uint8_t[RAM_SIZE];
   memset(ram, 0, RAM_SIZE);
 
-  // Initialize system with ROMs
-  sys.init(ram, atarixl_os_rom, atari_basic_rom);
+  // Initialize system with ROMs (use getters to get initialized ROM data)
+  sys.init(ram, getAtariOSRom(), getAtariBasicRom());
 
   // Create keyboard driver
-  sys.keyboard = KeyboardFactory::create();
+  sys.keyboard = Keyboard::create();
   if (sys.keyboard) {
     sys.keyboard->init();
   }
 
   // Create joystick driver
-  JoystickDriver *joystick = JoystickFactory::create();
+  JoystickDriver *joystick = Joystick::create();
   if (joystick) {
     joystick->init();
     sys.setJoystick(joystick);
