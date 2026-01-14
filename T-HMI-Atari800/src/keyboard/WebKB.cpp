@@ -34,7 +34,7 @@
 static const char *TAG = "WEBKB";
 
 // web conf portal
-#define AP_SSID "T-HMI-C64"
+#define AP_SSID "T-HMI-Atari800"
 #define AP_PASSWORD ""
 #define DNS_PORT 53
 
