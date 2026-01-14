@@ -122,7 +122,7 @@ upload: compile
 	$(ARDUINO_CLI) upload \
 		--fqbn $(FQBN) \
 		--port $(PORT) \
-		--input-dir $(BUILD_DIR)
+		--input-file $(BUILD_DIR)/$(PROJECT).ino.bin
 
 # Clean build files
 clean:
