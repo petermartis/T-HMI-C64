@@ -23,7 +23,7 @@
 #include "CalibrateBattery.h"
 #include <driver/gpio.h>
 #include <soc/gpio_struct.h>
-#include <stdexcept>
+#include <esp_log.h>
 
 class T_HMI : public BoardDriver, CalibrateBattery {
 public:
@@ -36,8 +36,8 @@ public:
     io_conf.pin_bit_mask = (1ULL << Config::PWR_ON) | (1ULL << Config::PWR_EN);
     esp_err_t err = gpio_config(&io_conf);
     if (err != ESP_OK) {
-      throw std::runtime_error(std::string("init. of BoardDriver failed: ") +
-                               esp_err_to_name(err));
+      ESP_LOGE("T_HMI", "init. of BoardDriver failed: %s", esp_err_to_name(err));
+      return;
     }
     GPIO.out_w1ts = (1 << Config::PWR_ON);
     GPIO.out_w1ts = (1 << Config::PWR_EN);

@@ -52,6 +52,9 @@ void ANTIC::init(uint8_t *ram, GTIA *gtia) {
   this->ram = ram;
   this->gtia = gtia;
 
+  // Initialize palette (deferred from constructor to avoid FP during static init)
+  palette.init();
+
   // Allocate bitmap for ATARI_WIDTH x ATARI_HEIGHT pixels (16-bit RGB565)
   bitmap = new uint16_t[ATARI_WIDTH * ATARI_HEIGHT];
   memset(bitmap, 0, ATARI_WIDTH * ATARI_HEIGHT * sizeof(uint16_t));

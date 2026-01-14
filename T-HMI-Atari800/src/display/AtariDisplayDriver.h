@@ -33,6 +33,7 @@ class AtariPalette {
 private:
   // Atari 800 NTSC palette (256 colors in RGB565 format)
   uint16_t atariColors[256];
+  bool initialized;
 
   void generatePalette() {
     // Generate Atari NTSC palette
@@ -93,10 +94,26 @@ private:
 
       atariColors[color] = (r5 << 11) | (g6 << 5) | b5;
     }
+    initialized = true;
   }
 
 public:
-  AtariPalette() { generatePalette(); }
+  AtariPalette() : initialized(false) {
+    // Don't generate palette in constructor - defer to init()
+    // This avoids floating point math during static initialization
+    for (int i = 0; i < 256; i++) {
+      atariColors[i] = 0;
+    }
+  }
+
+  /**
+   * @brief Initialize the palette. Must be called before use.
+   */
+  void init() {
+    if (!initialized) {
+      generatePalette();
+    }
+  }
 
   /**
    * @brief Provides access to the Atari palette in RGB565 format.
