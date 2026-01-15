@@ -52,9 +52,15 @@ private:
   };
 
   static void taskEntryPoint(void *arg) {
+    // Log immediately when task starts
+    esp_log_write(ESP_LOG_INFO, "TASK", "[I][TASK] Task entry point called\n");
     std::unique_ptr<TaskContext> ctx(static_cast<TaskContext *>(arg));
     if (ctx && ctx->func) {
+      esp_log_write(ESP_LOG_INFO, "TASK", "[I][TASK] Calling task function\n");
       ctx->func(nullptr);
+      esp_log_write(ESP_LOG_ERROR, "TASK", "[E][TASK] Task function returned!\n");
+    } else {
+      esp_log_write(ESP_LOG_ERROR, "TASK", "[E][TASK] ctx or func is null!\n");
     }
   }
 
@@ -131,8 +137,13 @@ public:
                  uint8_t prio) override {
     auto *ctx = new TaskContext{std::move(taskFunction)};
     // 32KB stack for CPU emulation task (6502 emulator needs significant stack)
-    xTaskCreatePinnedToCore(taskEntryPoint, "genericTask", 32768, ctx, prio,
-                            nullptr, core);
+    TaskHandle_t taskHandle = nullptr;
+    BaseType_t result = xTaskCreatePinnedToCore(taskEntryPoint, "cpuTask", 32768, ctx, prio,
+                            &taskHandle, core);
+    char msg[100];
+    snprintf(msg, sizeof(msg), "[I][Platform] startTask: result=%d handle=%p core=%d\n",
+             (int)result, (void*)taskHandle, core);
+    esp_log_write(ESP_LOG_INFO, "Platform", msg);
   }
 };
 #endif
