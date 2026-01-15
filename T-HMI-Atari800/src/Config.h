@@ -40,7 +40,8 @@
 #define USE_ST7789V
 #define USE_SDCARD
 #define USE_ARDUINOJOYSTICK
-#define USE_NOSOUND
+#define USE_I2SSOUND  // T-HMI has built-in MAX98357A I2S amplifier
+#define HAS_DEFAULT_VOLUME
 #elif defined(BOARD_T_DISPLAY_S3)
 #define USE_RM67162
 #define USE_NOFS
@@ -138,6 +139,12 @@ struct Config {
   static const adc_channel_t ADC_JOYSTICK_Y = ADC_CHANNEL_5;
   static const uint8_t JOYSTICK_FIRE_PIN = 18;
   static const uint8_t JOYSTICK_FIRE2_PIN = 17;
+
+  // I2S Sound (MAX98357A amplifier)
+  static const uint8_t DEFAULT_VOLUME = 128;
+  static const uint8_t I2S_DOUT = 2;   // T-HMI I2S data out pin
+  static const uint8_t I2S_BCLK = 9;   // T-HMI I2S bit clock pin
+  static const uint8_t I2S_LRC = 3;    // T-HMI I2S word select (LR clock)
 
   // BLEKB
   static constexpr const char *SERVICE_UUID =

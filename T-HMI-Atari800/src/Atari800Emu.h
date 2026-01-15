@@ -18,8 +18,13 @@
 #define ATARI800EMU_H
 
 #include "Atari800Sys.h"
+#include "AtariLoader.h"
 #include "board/BoardDriver.h"
+#include "fs/FileDriver.h"
 #include <atomic>
+#include <memory>
+#include <string>
+#include <vector>
 
 /**
  * @brief Main Atari 800 Emulator class
@@ -29,16 +34,24 @@
  * - Allocates memory
  * - Sets up the emulation core
  * - Manages the main loop and display refresh
+ * - Handles file loading from SD card
  */
 class Atari800Emu {
 private:
   uint8_t *ram;
   BoardDriver *board;
+  std::unique_ptr<FileDriver> fs;
+  std::unique_ptr<AtariLoader> loader;
   uint16_t cntSecondsForBatteryCheck;
+
+  // Pending file to load (set from web interface, loaded in main loop)
+  std::string pendingLoadFile;
+  std::atomic<bool> loadFileRequested{false};
 
   void intervalTimerScanKeyboardFunc();
   void intervalTimerProfilingBatteryCheckFunc();
   void cpuCode(void *parameter);
+  void handleExternalCommands();
 
 public:
   Atari800Sys sys;
@@ -51,6 +64,18 @@ public:
 
   void setup();
   void loop();
+
+  // File loading interface
+  bool loadFile(const std::string &filename);
+  bool mountATR(const std::string &filename);
+  void unmountATR();
+  std::vector<std::string> listFiles();
+
+  // Request file load from another thread (e.g., web interface)
+  void requestLoadFile(const std::string &filename);
+
+  // Access to loader for SIO emulation
+  AtariLoader *getLoader() { return loader.get(); }
 };
 
 #endif // ATARI800EMU_H

@@ -107,6 +107,37 @@ public:
   virtual void setDetectReleasekey(bool detectreleasekey) = 0;
 
   /**
+   * @brief Retrieves the current Atari key code for POKEY.
+   *
+   * Returns the key code in POKEY KBCODE format:
+   * - Bits 5-0: Key code (0-63)
+   * - Bit 6: Shift modifier
+   * - Bit 7: Control modifier
+   *
+   * @return 8-bit Atari key code, or 0xFF if no key pressed.
+   */
+  virtual uint8_t getAtariKeyCode() { return 0xFF; }
+
+  /**
+   * @brief Check if a key is currently pressed.
+   *
+   * @return true if a key is pressed, false otherwise.
+   */
+  virtual bool isAtariKeyPressed() { return false; }
+
+  /**
+   * @brief Get the console key state (Start, Select, Option).
+   *
+   * Returns the state of Atari console keys:
+   * - Bit 0: Start (1 = pressed)
+   * - Bit 1: Select (1 = pressed)
+   * - Bit 2: Option (1 = pressed)
+   *
+   * @return 8-bit console key state.
+   */
+  virtual uint8_t getConsoleKeys() { return 0; }
+
+  /**
    * @brief Synchronizes SDL events with the main thread and creates the attach
    * window when needed.
    *

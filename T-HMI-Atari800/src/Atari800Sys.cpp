@@ -338,8 +338,16 @@ void Atari800Sys::logDebugInfo() {
 
 void Atari800Sys::scanKeyboard() {
   if (keyboard) {
-    // Keyboard scanning handled by external keyboard driver
-    // Key codes sent to POKEY via setKeyCode()
+    // Get Atari key code from keyboard driver and send to POKEY
+    uint8_t keyCode = keyboard->getAtariKeyCode();
+    bool keyPressed = keyboard->isAtariKeyPressed();
+    pokey.setKeyCode(keyCode, keyPressed);
+
+    // Get console keys and send to GTIA
+    uint8_t consoleState = keyboard->getConsoleKeys();
+    gtia.setConsoleKey(0x01, (consoleState & 0x01) != 0); // START
+    gtia.setConsoleKey(0x02, (consoleState & 0x02) != 0); // SELECT
+    gtia.setConsoleKey(0x04, (consoleState & 0x04) != 0); // OPTION
   }
 
   // Update joystick

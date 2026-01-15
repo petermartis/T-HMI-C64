@@ -62,6 +62,17 @@ public:
     return joyvalue.load(std::memory_order_acquire);
   }
 
+  // Atari-specific keyboard interface
+  uint8_t getAtariKeyCode() override {
+    return atariKeyCode.load(std::memory_order_acquire);
+  }
+  bool isAtariKeyPressed() override {
+    return atariKeyPressed.load(std::memory_order_acquire);
+  }
+  uint8_t getConsoleKeys() override {
+    return consoleKeys.load(std::memory_order_acquire);
+  }
+
   uint8_t *getExtCmdData() override;
   void sendExtCmdNotification(uint8_t *data, size_t size) override;
 
@@ -93,6 +104,11 @@ private:
   std::atomic<uint8_t> shiftctrlcode{0};
   std::atomic<uint8_t> joyvalue{0};
   std::atomic<bool> gotExternalCmd = false;
+
+  // Atari-specific keyboard state
+  std::atomic<uint8_t> atariKeyCode{0xFF};    // POKEY KBCODE format
+  std::atomic<bool> atariKeyPressed{false};    // Key currently pressed
+  std::atomic<uint8_t> consoleKeys{0};         // Start/Select/Option
   uint8_t extCmdBuffer[1024];
   bool shiftlock = false;
   std::queue<CodeTriple> eventQueue;

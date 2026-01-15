@@ -16,6 +16,7 @@
 */
 #include "Atari800Emu.h"
 #include "board/BoardFactory.h"
+#include "fs/FileFactory.h"
 #include "joystick/JoystickFactory.h"
 #include "keyboard/KeyboardFactory.h"
 #include "platform/PlatformFactory.h"
@@ -141,6 +142,17 @@ void Atari800Emu::setup() {
   }
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Joystick done");
 
+  // Initialize file system and loader
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating file system...");
+  fs = FileSys::create();
+  if (fs) {
+    fs->init();
+    loader = std::make_unique<AtariLoader>(ram, fs.get());
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "File system and loader initialized");
+  } else {
+    PlatformManager::getInstance().log(LOG_WARN, TAG, "No file system available");
+  }
+
   // Start CPU task on core 1
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting CPU task on core 1...");
   PlatformManager::getInstance().startTask(
@@ -176,6 +188,15 @@ void Atari800Emu::loop() {
     PlatformManager::getInstance().log(LOG_INFO, TAG, "loop() #%lu, refreshs=%d", loopCount, sys.antic.cntRefreshs.load());
   }
 
+  // Handle pending file load requests
+  if (loadFileRequested.load()) {
+    loadFileRequested.store(false);
+    loadFile(pendingLoadFile);
+  }
+
+  // Handle external commands from keyboard
+  handleExternalCommands();
+
   // Main loop - refresh display
   sys.antic.refresh();
 
@@ -187,4 +208,80 @@ void Atari800Emu::loop() {
 
   // Update refresh counter
   cntRefreshs.store(sys.antic.cntRefreshs.load());
+}
+
+void Atari800Emu::handleExternalCommands() {
+  if (!sys.keyboard) return;
+
+  uint8_t *extCmd = sys.keyboard->getExtCmdData();
+  if (!extCmd) return;
+
+  ExtCmd cmd = static_cast<ExtCmd>(extCmd[0]);
+
+  switch (cmd) {
+  case ExtCmd::LOAD:
+    // Show file list and load first found XEX file (simplified)
+    {
+      auto files = listFiles();
+      if (!files.empty()) {
+        PlatformManager::getInstance().log(LOG_INFO, TAG, "Found %zu files, loading first", files.size());
+        loadFile(files[0]);
+      } else {
+        PlatformManager::getInstance().log(LOG_WARN, TAG, "No Atari files found on SD card");
+      }
+    }
+    break;
+
+  case ExtCmd::RESET:
+    sys.reset();
+    break;
+
+  default:
+    // Other commands not handled yet
+    break;
+  }
+}
+
+bool Atari800Emu::loadFile(const std::string &filename) {
+  if (!loader) {
+    PlatformManager::getInstance().log(LOG_ERROR, TAG, "No loader available");
+    return false;
+  }
+
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Loading file: %s", filename.c_str());
+
+  AtariLoader::LoadResult result = loader->loadExecutable(filename);
+
+  if (!result.success) {
+    PlatformManager::getInstance().log(LOG_ERROR, TAG, "Load failed: %s", result.errorMessage.c_str());
+    return false;
+  }
+
+  // If we have a run address, set PC to it
+  if (result.runAddress != 0) {
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "Setting PC to run address $%04X", result.runAddress);
+    sys.setPC(result.runAddress);
+  }
+
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Load complete");
+  return true;
+}
+
+bool Atari800Emu::mountATR(const std::string &filename) {
+  if (!loader) return false;
+  return loader->mountATR(filename);
+}
+
+void Atari800Emu::unmountATR() {
+  if (loader) loader->unmountATR();
+}
+
+std::vector<std::string> Atari800Emu::listFiles() {
+  if (!loader) return {};
+  return loader->listFiles();
+}
+
+void Atari800Emu::requestLoadFile(const std::string &filename) {
+  pendingLoadFile = filename;
+  loadFileRequested.store(true);
 }

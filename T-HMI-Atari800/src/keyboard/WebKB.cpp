@@ -21,6 +21,7 @@
 
 #include "../ExtCmd.h"
 #include "../platform/PlatformManager.h"
+#include "AtariKeycodes.h"
 #include "SDLKeymap.h"
 #include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
@@ -343,6 +344,97 @@ const KeyMapEntry c64KeyMap[] = {
     {"char:F7", false, false, false, {C64_KEYCODE_F7}},
     {"char:F8", false, false, false, {C64_KEYCODE_F8}},
 };
+
+/**
+ * @brief Convert web keyboard key ID to Atari key code
+ * @param keyId Key identifier (e.g., "char:A", "char:Enter")
+ * @param shift Shift modifier pressed
+ * @param ctrl Control modifier pressed
+ * @return Atari POKEY key code (0xFF = no key)
+ */
+static uint8_t keyIdToAtariCode(const char *keyId, bool shift, bool ctrl) {
+  if (!keyId || strncmp(keyId, "char:", 5) != 0) {
+    return 0xFF;
+  }
+  const char *key = keyId + 5;  // Skip "char:" prefix
+
+  uint8_t code = 0xFF;
+
+  // Single character keys
+  if (strlen(key) == 1) {
+    char c = key[0];
+    // Letters
+    if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+      code = asciiToAtariKey(c);
+    }
+    // Numbers
+    else if (c >= '0' && c <= '9') {
+      code = asciiToAtariKey(c);
+    }
+    // Punctuation
+    else {
+      code = asciiToAtariKey(c);
+    }
+  }
+  // Special keys
+  else if (strcmp(key, "Enter") == 0) {
+    code = ATARI_KEY_RETURN;
+  }
+  else if (strcmp(key, "Backspace") == 0 || strcmp(key, "Delete") == 0) {
+    code = ATARI_KEY_BACKSPACE;
+  }
+  else if (strcmp(key, "Escape") == 0) {
+    code = ATARI_KEY_ESC;
+  }
+  else if (strcmp(key, "Tab") == 0) {
+    code = ATARI_KEY_TAB;
+  }
+  else if (strcmp(key, "F1") == 0) {
+    code = ATARI_KEY_F1;
+  }
+  else if (strcmp(key, "F2") == 0) {
+    code = ATARI_KEY_F2;
+  }
+  else if (strcmp(key, "F3") == 0) {
+    code = ATARI_KEY_F3;
+  }
+  else if (strcmp(key, "F4") == 0) {
+    code = ATARI_KEY_F4;
+  }
+  else if (strcmp(key, "Help") == 0 || strcmp(key, "F5") == 0) {
+    code = ATARI_KEY_HELP;
+  }
+  else if (strcmp(key, "ArrowUp") == 0) {
+    code = ATARI_KEY_MINUS | ATARI_MOD_CONTROL;  // Ctrl+Minus = Up
+  }
+  else if (strcmp(key, "ArrowDown") == 0) {
+    code = ATARI_KEY_EQUALS | ATARI_MOD_CONTROL; // Ctrl+Equals = Down
+  }
+  else if (strcmp(key, "ArrowLeft") == 0) {
+    code = ATARI_KEY_PLUS | ATARI_MOD_CONTROL;   // Ctrl+Plus = Left
+  }
+  else if (strcmp(key, "ArrowRight") == 0) {
+    code = ATARI_KEY_ASTERISK | ATARI_MOD_CONTROL; // Ctrl+Asterisk = Right
+  }
+  else if (strcmp(key, "Capslock") == 0) {
+    code = ATARI_KEY_CAPS;
+  }
+  else if (strcmp(key, "Home") == 0) {
+    code = ATARI_KEY_LESS | ATARI_MOD_CONTROL;   // Ctrl+< = Clear screen
+  }
+
+  if (code != 0xFF && code != ATARI_KEY_NONE) {
+    // Add modifiers (but don't double-add if already included)
+    if (shift && !(code & ATARI_MOD_SHIFT)) {
+      code |= ATARI_MOD_SHIFT;
+    }
+    if (ctrl && !(code & ATARI_MOD_CONTROL)) {
+      code |= ATARI_MOD_CONTROL;
+    }
+  }
+
+  return code;
+}
 
 WebKB::WebKB(uint16_t port) : port(port) {}
 
@@ -706,7 +798,7 @@ void WebKB::processSingleKey(const char *type, const char *keyId, bool shift,
     }
   }
 
-  // key found in keymap -> put it in queue
+  // key found in keymap -> put it in queue (C64 mode)
   if (found) {
 
     PlatformManager::getInstance().log(LOG_DEBUG, TAG, "keycodes: %d %d",
@@ -730,6 +822,62 @@ void WebKB::processSingleKey(const char *type, const char *keyId, bool shift,
         xSemaphoreGive(queueSem);
       }
     }
+  }
+
+  // Atari key code handling (independent of C64 keymap)
+  if (strcmp(type, "key-down") == 0) {
+    // Check for Atari console keys
+    if (strcmp(keyId, "char:START") == 0 || strcmp(keyId, "char:F9") == 0) {
+      consoleKeys.store(consoleKeys.load(std::memory_order_relaxed) | ATARI_CONSOLE_START,
+                       std::memory_order_release);
+      return;
+    }
+    if (strcmp(keyId, "char:SELECT") == 0 || strcmp(keyId, "char:F10") == 0) {
+      consoleKeys.store(consoleKeys.load(std::memory_order_relaxed) | ATARI_CONSOLE_SELECT,
+                       std::memory_order_release);
+      return;
+    }
+    if (strcmp(keyId, "char:OPTION") == 0 || strcmp(keyId, "char:F11") == 0) {
+      consoleKeys.store(consoleKeys.load(std::memory_order_relaxed) | ATARI_CONSOLE_OPTION,
+                       std::memory_order_release);
+      return;
+    }
+    if (strcmp(keyId, "char:BREAK") == 0 || strcmp(keyId, "char:Pause") == 0) {
+      // Break key generates NMI - handled via external command
+      extCmdBuffer[0] = static_cast<std::underlying_type<ExtCmd>::type>(ExtCmd::RESTORE);
+      extCmdBuffer[1] = ATARI_KEY_BREAK;
+      gotExternalCmd = true;
+      return;
+    }
+
+    // Convert to Atari key code
+    uint8_t atariCode = keyIdToAtariCode(keyId, shift || shiftlock, ctrl);
+    if (atariCode != 0xFF && atariCode != ATARI_KEY_NONE) {
+      atariKeyCode.store(atariCode, std::memory_order_release);
+      atariKeyPressed.store(true, std::memory_order_release);
+      PlatformManager::getInstance().log(LOG_DEBUG, TAG, "Atari key: 0x%02X", atariCode);
+    }
+  }
+  else if (strcmp(type, "key-up") == 0) {
+    // Clear console keys on release
+    if (strcmp(keyId, "char:START") == 0 || strcmp(keyId, "char:F9") == 0) {
+      consoleKeys.store(consoleKeys.load(std::memory_order_relaxed) & ~ATARI_CONSOLE_START,
+                       std::memory_order_release);
+      return;
+    }
+    if (strcmp(keyId, "char:SELECT") == 0 || strcmp(keyId, "char:F10") == 0) {
+      consoleKeys.store(consoleKeys.load(std::memory_order_relaxed) & ~ATARI_CONSOLE_SELECT,
+                       std::memory_order_release);
+      return;
+    }
+    if (strcmp(keyId, "char:OPTION") == 0 || strcmp(keyId, "char:F11") == 0) {
+      consoleKeys.store(consoleKeys.load(std::memory_order_relaxed) & ~ATARI_CONSOLE_OPTION,
+                       std::memory_order_release);
+      return;
+    }
+
+    // Clear Atari key on release
+    atariKeyPressed.store(false, std::memory_order_release);
   }
 }
 
