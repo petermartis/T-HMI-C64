@@ -64,6 +64,14 @@ void Atari800Sys::init(uint8_t *ram, const uint8_t *osRom, const uint8_t *basicR
     memcpy(ram + 0x0640, screenText, txtSize);
   }
 
+  // Copy character ROM to RAM at $E000 (ANTIC reads character data from RAM)
+  // Boot code sets CHBASE=$E0 which means character base at $E000
+  size_t charSize = 0;
+  const uint8_t* charRom = getCharacterRom(&charSize);
+  if (charRom && charSize > 0) {
+    memcpy(ram + 0xE000, charRom, charSize);
+  }
+
   // Initialize chips
   antic.init(ram, &gtia);
   pokey.init();

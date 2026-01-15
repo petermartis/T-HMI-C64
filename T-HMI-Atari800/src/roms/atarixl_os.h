@@ -51,4 +51,8 @@ const uint8_t* getDisplayList(size_t* size);
 // Get screen text data for RAM initialization at $0640
 const uint8_t* getScreenText(size_t* size);
 
+// Get character ROM data for RAM initialization at $E000 (1KB)
+// ANTIC reads character data from RAM, so we need to copy the font there
+const uint8_t* getCharacterRom(size_t* size);
+
 #endif // ATARIXL_OS_H
