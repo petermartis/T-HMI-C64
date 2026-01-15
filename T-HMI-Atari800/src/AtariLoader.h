@@ -45,7 +45,7 @@ public:
   enum class FileType {
     UNKNOWN,
     XEX,       // Atari executable (DOS 2.x format)
-    BIN,       // Binary load (COM file)
+    BINARY,    // Binary load (COM file)
     ATR,       // ATR disk image
     CAS        // Cassette image (future)
   };

@@ -41,7 +41,7 @@ AtariLoader::FileType AtariLoader::detectFileType(const std::string &filename) {
     return FileType::XEX;
   }
   if (hasExtension(filename, ".bin")) {
-    return FileType::BIN;
+    return FileType::BINARY;
   }
   if (hasExtension(filename, ".atr")) {
     return FileType::ATR;
@@ -64,7 +64,7 @@ AtariLoader::LoadResult AtariLoader::loadExecutable(const std::string &filename)
   switch (type) {
   case FileType::XEX:
     return loadXEX(filename);
-  case FileType::BIN:
+  case FileType::BINARY:
     // Default load address for raw BIN files - can be overridden
     return loadBinary(filename, 0x2000);
   default:
