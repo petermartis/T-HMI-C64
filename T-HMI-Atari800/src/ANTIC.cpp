@@ -19,6 +19,7 @@
 #include "display/DisplayFactory.h"
 #include <cstring>
 #include <esp_log.h>
+#include <Arduino.h>
 
 // Mode line parameters: scanlines, bytes per line, characters/pixels
 static const struct {
@@ -50,31 +51,31 @@ ANTIC::ANTIC() : ram(nullptr), bitmap(nullptr), display(nullptr), gtia(nullptr) 
 }
 
 void ANTIC::init(uint8_t *ram, GTIA *gtia) {
-  ESP_LOGI("ANTIC", "init() starting");
+  Serial.println("[ANTIC] init() starting");
   this->ram = ram;
   this->gtia = gtia;
 
   // Initialize palette (deferred from constructor to avoid FP during static init)
   palette.init();
-  ESP_LOGI("ANTIC", "palette initialized");
+  Serial.println("[ANTIC] palette initialized");
 
   // Allocate bitmap for ATARI_WIDTH x ATARI_HEIGHT pixels (16-bit RGB565)
   bitmap = new uint16_t[ATARI_WIDTH * ATARI_HEIGHT];
   memset(bitmap, 0, ATARI_WIDTH * ATARI_HEIGHT * sizeof(uint16_t));
-  ESP_LOGI("ANTIC", "bitmap allocated: %p (%dx%d)", (void*)bitmap, ATARI_WIDTH, ATARI_HEIGHT);
+  Serial.printf("[ANTIC] bitmap allocated: %p (%dx%d)\n", (void*)bitmap, ATARI_WIDTH, ATARI_HEIGHT);
 
   // Create display driver
   display = Display::create();
-  ESP_LOGI("ANTIC", "display created: %p", (void*)display);
+  Serial.printf("[ANTIC] display created: %p\n", (void*)display);
   if (display) {
     display->init();
-    ESP_LOGI("ANTIC", "display initialized");
+    Serial.println("[ANTIC] display initialized");
   } else {
-    ESP_LOGE("ANTIC", "display is NULL!");
+    Serial.println("[ANTIC] ERROR: display is NULL!");
   }
 
   reset();
-  ESP_LOGI("ANTIC", "init() complete");
+  Serial.println("[ANTIC] init() complete");
 }
 
 void ANTIC::reset() {
@@ -589,7 +590,7 @@ void ANTIC::refresh() {
     // Debug: log ANTIC state every 50 frames (~1 second)
     if (++dbgCount >= 50) {
       dbgCount = 0;
-      ESP_LOGI("ANTIC", "dmactl=%02X dlist=%04X chbase=%02X bg=%02X scanline=%d",
+      Serial.printf("[ANTIC] dmactl=%02X dlist=%04X chbase=%02X bg=%02X scanline=%d\n",
                dmactl, dlist, chbase, gtia->getBackgroundColor(), scanline);
     }
   }
