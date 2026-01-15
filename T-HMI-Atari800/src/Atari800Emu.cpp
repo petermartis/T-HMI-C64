@@ -68,6 +68,7 @@ void Atari800Emu::intervalTimerProfilingBatteryCheckFunc() {
 
 void Atari800Emu::cpuCode(void *parameter) {
   PlatformManager::getInstance().log(LOG_INFO, TAG, "CPU task starting, PC=%04X", sys.getPC());
+  vTaskDelay(pdMS_TO_TICKS(50)); // flush log before entering run loop
   sys.run();
   PlatformManager::getInstance().log(LOG_ERROR, TAG, "CPU task ended unexpectedly!");
 }
@@ -103,42 +104,47 @@ void Atari800Emu::setup() {
 
   // Initialize system with ROMs (use getters to get initialized ROM data)
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Getting OS ROM...");
+  vTaskDelay(pdMS_TO_TICKS(10)); // flush
   const uint8_t* osRom = getAtariOSRom();
   PlatformManager::getInstance().log(LOG_INFO, TAG, "OS ROM at %p", (void*)osRom);
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Getting BASIC ROM...");
+  vTaskDelay(pdMS_TO_TICKS(10));
   const uint8_t* basicRom = getAtariBasicRom();
   PlatformManager::getInstance().log(LOG_INFO, TAG, "BASIC ROM at %p", (void*)basicRom);
+  vTaskDelay(pdMS_TO_TICKS(10));
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Calling sys.init()...");
+  vTaskDelay(pdMS_TO_TICKS(10));
   sys.init(ram, osRom, basicRom);
   PlatformManager::getInstance().log(LOG_INFO, TAG, "System initialized");
+  vTaskDelay(pdMS_TO_TICKS(10));
 
   // Create keyboard driver
-  ESP_LOGI(TAG, "Creating keyboard...");
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating keyboard...");
   sys.keyboard = Keyboard::create();
   if (sys.keyboard) {
-    ESP_LOGI(TAG, "Initializing keyboard...");
     sys.keyboard->init();
   }
-  ESP_LOGI(TAG, "Keyboard done");
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Keyboard done");
+  vTaskDelay(pdMS_TO_TICKS(10));
 
   // Create joystick driver
-  ESP_LOGI(TAG, "Creating joystick...");
   JoystickDriver *joystick = Joystick::create();
   if (joystick) {
-    ESP_LOGI(TAG, "Initializing joystick...");
     joystick->init();
     sys.setJoystick(joystick);
   }
-  ESP_LOGI(TAG, "Joystick done");
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Joystick done");
+  vTaskDelay(pdMS_TO_TICKS(10));
 
   // Start CPU task on core 1
-  ESP_LOGI(TAG, "Starting CPU task on core 1...");
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting CPU task on core 1...");
+  vTaskDelay(pdMS_TO_TICKS(10));
   PlatformManager::getInstance().startTask(
       [this](void *param) { this->cpuCode(param); },
       1,  // Core 1
       5   // Priority
   );
-  ESP_LOGI(TAG, "CPU task started");
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "CPU task created");
+  vTaskDelay(pdMS_TO_TICKS(100)); // give CPU task time to start
 
   // Start keyboard scanner timer (every 8ms)
   ESP_LOGI(TAG, "Starting keyboard timer...");
