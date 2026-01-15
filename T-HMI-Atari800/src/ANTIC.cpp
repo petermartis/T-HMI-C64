@@ -18,6 +18,7 @@
 #include "GTIA.h"
 #include "display/DisplayFactory.h"
 #include <cstring>
+#include <esp_log.h>
 
 // Mode line parameters: scanlines, bytes per line, characters/pixels
 static const struct {
@@ -570,11 +571,19 @@ uint8_t ANTIC::nextScanline() {
 }
 
 void ANTIC::refresh() {
+  static uint8_t dbgCount = 0;
   if (display) {
     display->drawBitmap(bitmap);
     // Draw border with background color (convert Atari color to RGB565)
     uint16_t borderColor = palette.colorToRGB565(gtia->getBackgroundColor());
     display->drawFrame(borderColor);
+
+    // Debug: log ANTIC state every 50 frames (~1 second)
+    if (++dbgCount >= 50) {
+      dbgCount = 0;
+      ESP_LOGI("ANTIC", "dmactl=%02X dlist=%04X chbase=%02X bg=%02X scanline=%d",
+               dmactl, dlist, chbase, gtia->getBackgroundColor(), scanline);
+    }
   }
   cntRefreshs++;
 }
