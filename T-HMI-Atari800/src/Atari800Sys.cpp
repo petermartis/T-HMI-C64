@@ -354,6 +354,7 @@ void Atari800Sys::run() {
   uint32_t totalCycles = 0;
   uint32_t frameCount = 0;
 
+  uint32_t instrCount = 0;
   while (!cpuhalted) {
     // Execute instructions for one scanline
     cyclesThisScanline = 0;
@@ -369,7 +370,22 @@ void Atari800Sys::run() {
       // Execute one instruction
       numofcycles = 0;
       logDebugInfo();
-      execute(getMem(pc++));
+      uint16_t instrPC = pc;
+      uint8_t opcode = getMem(pc++);
+
+      // Debug: Log first 20 instructions and the halting one
+      if (instrCount < 20) {
+        PlatformManager::getInstance().log(LOG_INFO, TAG, "instr#%u: PC=%04X op=%02X", instrCount, instrPC, opcode);
+      }
+
+      execute(opcode);
+      instrCount++;
+
+      // Check if we just halted
+      if (cpuhalted) {
+        PlatformManager::getInstance().log(LOG_ERROR, TAG, "HALT at instr#%u: PC=%04X op=%02X", instrCount-1, instrPC, opcode);
+      }
+
       cyclesThisScanline += numofcycles;
       totalCycles += numofcycles;
 
