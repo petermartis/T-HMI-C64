@@ -336,6 +336,20 @@ void Atari800Sys::run() {
   static const char* TAG = "CPU";
   PlatformManager::getInstance().log(LOG_INFO, TAG, "run() starting, PC=%04X cpuhalted=%d", pc, cpuhalted);
 
+  // Debug: Show first few bytes at PC to diagnose boot issue
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "osRomEnabled=%d osRom=%p", osRomEnabled, (void*)osRom);
+  uint8_t b0 = getMem(pc);
+  uint8_t b1 = getMem(pc+1);
+  uint8_t b2 = getMem(pc+2);
+  uint8_t b3 = getMem(pc+3);
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "getMem(%04X)=%02X %02X %02X %02X", pc, b0, b1, b2, b3);
+  // Also check raw ROM bytes
+  if (osRom) {
+    uint16_t offset = 0x2450;  // E450 - C000
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "osRom[%04X]=%02X %02X %02X %02X",
+        offset, osRom[offset], osRom[offset+1], osRom[offset+2], osRom[offset+3]);
+  }
+
   int64_t lastMeasuredTime = PlatformManager::getInstance().getTimeUS();
   uint32_t totalCycles = 0;
   uint32_t frameCount = 0;
