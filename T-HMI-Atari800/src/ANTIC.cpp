@@ -50,23 +50,31 @@ ANTIC::ANTIC() : ram(nullptr), bitmap(nullptr), display(nullptr), gtia(nullptr) 
 }
 
 void ANTIC::init(uint8_t *ram, GTIA *gtia) {
+  ESP_LOGI("ANTIC", "init() starting");
   this->ram = ram;
   this->gtia = gtia;
 
   // Initialize palette (deferred from constructor to avoid FP during static init)
   palette.init();
+  ESP_LOGI("ANTIC", "palette initialized");
 
   // Allocate bitmap for ATARI_WIDTH x ATARI_HEIGHT pixels (16-bit RGB565)
   bitmap = new uint16_t[ATARI_WIDTH * ATARI_HEIGHT];
   memset(bitmap, 0, ATARI_WIDTH * ATARI_HEIGHT * sizeof(uint16_t));
+  ESP_LOGI("ANTIC", "bitmap allocated: %p (%dx%d)", (void*)bitmap, ATARI_WIDTH, ATARI_HEIGHT);
 
   // Create display driver
   display = Display::create();
+  ESP_LOGI("ANTIC", "display created: %p", (void*)display);
   if (display) {
     display->init();
+    ESP_LOGI("ANTIC", "display initialized");
+  } else {
+    ESP_LOGE("ANTIC", "display is NULL!");
   }
 
   reset();
+  ESP_LOGI("ANTIC", "init() complete");
 }
 
 void ANTIC::reset() {

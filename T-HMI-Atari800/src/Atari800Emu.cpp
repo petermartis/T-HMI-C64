@@ -155,6 +155,13 @@ void Atari800Emu::setup() {
 }
 
 void Atari800Emu::loop() {
+  static uint32_t loopCount = 0;
+
+  // Debug: log loop entry every 50 calls
+  if (++loopCount % 50 == 0) {
+    ESP_LOGI(TAG, "loop() called %lu times, cntRefreshs=%d", loopCount, sys.antic.cntRefreshs.load());
+  }
+
   // Main loop - refresh display
   sys.antic.refresh();
 
