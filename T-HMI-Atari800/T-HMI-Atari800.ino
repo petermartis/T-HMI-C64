@@ -69,7 +69,12 @@ void core0Task(void *param) {
  */
 void setup() {
   Serial.begin(115200);
-  vTaskDelay(pdMS_TO_TICKS(500));
+
+  // Wait for serial monitor to connect (3 seconds countdown)
+  for (int i = 3; i > 0; i--) {
+    Serial.printf("Starting in %d...\n", i);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
 
   Serial.println("T-HMI-Atari800 Starting...");
 
