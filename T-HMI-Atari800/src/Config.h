@@ -40,8 +40,13 @@
 #define USE_ST7789V
 #define USE_SDCARD
 #define USE_ARDUINOJOYSTICK
-#define USE_I2SSOUND  // T-HMI has built-in MAX98357A I2S amplifier
-#define HAS_DEFAULT_VOLUME
+// T-HMI has no built-in speaker. Touchscreen uses GPIO 1,2,3,4,9 leaving
+// very few free pins for I2S. Use NOSOUND by default; users can enable
+// I2S by connecting external MAX98357A to Grove connector pins and
+// uncommenting USE_I2SSOUND with correct pin assignments below.
+#define USE_NOSOUND
+// #define USE_I2SSOUND
+// #define HAS_DEFAULT_VOLUME
 #elif defined(BOARD_T_DISPLAY_S3)
 #define USE_RM67162
 #define USE_NOFS
@@ -134,17 +139,23 @@ struct Config {
   static const uint8_t SD_MOSI_PIN = 11;
   static const uint8_t SD_SCLK_PIN = 12;
 
-  // Joystick
+  // Joystick (analog joystick via ADC + digital fire buttons)
+  // Note: ADC_CHANNEL_5 (GPIO1) may conflict with touchscreen on some uses
   static const adc_channel_t ADC_JOYSTICK_X = ADC_CHANNEL_4;
   static const adc_channel_t ADC_JOYSTICK_Y = ADC_CHANNEL_5;
-  static const uint8_t JOYSTICK_FIRE_PIN = 18;
-  static const uint8_t JOYSTICK_FIRE2_PIN = 17;
+  static const uint8_t JOYSTICK_FIRE_PIN = 18;   // Grove connector
+  static const uint8_t JOYSTICK_FIRE2_PIN = 17;  // Grove connector
 
-  // I2S Sound (MAX98357A amplifier)
+  // I2S Sound - DISABLED by default (conflicts with touchscreen)
+  // To enable: connect external MAX98357A to available Grove GPIO pins,
+  // update pin assignments below, and change USE_NOSOUND to USE_I2SSOUND above
+  // WARNING: GPIO 2,3,9 conflict with touchscreen (CS, MOSI, INT)
   static const uint8_t DEFAULT_VOLUME = 128;
-  static const uint8_t I2S_DOUT = 2;   // T-HMI I2S data out pin
-  static const uint8_t I2S_BCLK = 9;   // T-HMI I2S bit clock pin
-  static const uint8_t I2S_LRC = 3;    // T-HMI I2S word select (LR clock)
+  // Suggested pins if touchscreen not used: GPIO 17, 18, 21
+  // Otherwise find free pins on your T-HMI's Grove connectors
+  static const uint8_t I2S_DOUT = 17;  // Change to available GPIO
+  static const uint8_t I2S_BCLK = 18;  // Change to available GPIO
+  static const uint8_t I2S_LRC = 21;   // Change to available GPIO (Button 2)
 
   // BLEKB
   static constexpr const char *SERVICE_UUID =
