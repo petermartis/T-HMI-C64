@@ -45,4 +45,10 @@ extern const uint8_t atarixl_os_rom[ATARIXL_OS_SIZE];
 // Get initialized OS ROM (call this instead of using atarixl_os_rom directly)
 const uint8_t* getAtariOSRom();
 
+// Get display list data for RAM initialization at $0600
+const uint8_t* getDisplayList(size_t* size);
+
+// Get screen text data for RAM initialization at $0640
+const uint8_t* getScreenText(size_t* size);
+
 #endif // ATARIXL_OS_H

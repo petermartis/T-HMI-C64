@@ -16,6 +16,8 @@
 */
 #include "Atari800Sys.h"
 #include "platform/PlatformManager.h"
+#include "roms/atarixl_os.h"
+#include <cstring>
 
 // Cycles per scanline (PAL: 114 cycles at 1.77MHz)
 constexpr int32_t CYCLES_PER_SCANLINE = 114;
@@ -47,6 +49,20 @@ void Atari800Sys::init(uint8_t *ram, const uint8_t *osRom, const uint8_t *basicR
   // Character ROM is built into OS ROM at offset $E000 (relative to $C000)
   // In the actual OS ROM it's at $E000-$E3FF
   this->charRom = osRom + 0x2000;  // $E000 - $C000 = $2000
+
+  // Copy display list to RAM at $0600 (where the boot code expects it)
+  size_t dlSize = 0;
+  const uint8_t* displayList = getDisplayList(&dlSize);
+  if (displayList && dlSize > 0) {
+    memcpy(ram + 0x0600, displayList, dlSize);
+  }
+
+  // Copy screen text to RAM at $0640 (where the display list points)
+  size_t txtSize = 0;
+  const uint8_t* screenText = getScreenText(&txtSize);
+  if (screenText && txtSize > 0) {
+    memcpy(ram + 0x0640, screenText, txtSize);
+  }
 
   // Initialize chips
   antic.init(ram, &gtia);

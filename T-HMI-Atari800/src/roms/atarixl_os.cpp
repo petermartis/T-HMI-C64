@@ -209,6 +209,18 @@ static const uint8_t screen_text[] = {
     0x00, 0x00, 0x00, 0x00, // 4 spaces
 };
 
+// Get display list data and size for RAM initialization
+const uint8_t* getDisplayList(size_t* size) {
+    if (size) *size = sizeof(display_list);
+    return display_list;
+}
+
+// Get screen text data and size for RAM initialization
+const uint8_t* getScreenText(size_t* size) {
+    if (size) *size = sizeof(screen_text);
+    return screen_text;
+}
+
 // Forward declaration
 static void initAtariOSRom(uint8_t *rom);
 
