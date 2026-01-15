@@ -107,10 +107,9 @@ void Atari800Sys::reset() {
   pokey.reset();
   pia.reset();
 
-  // Enable ROMs
-  osRomEnabled = true;
-  basicRomEnabled = true;
-  selfTestEnabled = false;
+  // Sync banking state with PIA's initial PORTB value
+  // PIA resets with portb = 0x7C (OS and BASIC enabled)
+  updateBanking();
 
   // Read reset vector from OS ROM
   pc = osRom[0x3FFC - 0x0000] | (osRom[0x3FFD - 0x0000] << 8);
@@ -405,13 +404,33 @@ void Atari800Sys::run() {
       uint16_t instrPC = pc;
       uint8_t opcode = getMem(pc++);
 
-      // Debug: Log first 20 instructions and the halting one
+      // Debug: Log first 20 instructions
       if (instrCount < 20) {
         PlatformManager::getInstance().log(LOG_INFO, TAG, "instr#%u: PC=%04X op=%02X", instrCount, instrPC, opcode);
       }
 
+      // Track PC before execution
+      static uint16_t prevPC = 0;
+      static uint8_t prevOp = 0;
+      static bool crashReported = false;
+
       execute(opcode);
       instrCount++;
+
+      // Detect when PC becomes 0 (crash)
+      if (pc == 0 && !crashReported) {
+        PlatformManager::getInstance().log(LOG_ERROR, TAG, "CRASH to PC=0 at instr#%u!", instrCount-1);
+        PlatformManager::getInstance().log(LOG_ERROR, TAG, "  Previous: PC=%04X op=%02X", prevPC, prevOp);
+        PlatformManager::getInstance().log(LOG_ERROR, TAG, "  Current: PC=%04X op=%02X A=%02X X=%02X Y=%02X SP=%02X",
+            instrPC, opcode, a, x, y, sp);
+        // Log stack contents
+        PlatformManager::getInstance().log(LOG_ERROR, TAG, "  Stack[FF-F8]: %02X %02X %02X %02X %02X %02X %02X %02X",
+            ram[0x1FF], ram[0x1FE], ram[0x1FD], ram[0x1FC], ram[0x1FB], ram[0x1FA], ram[0x1F9], ram[0x1F8]);
+        crashReported = true;
+      }
+
+      prevPC = instrPC;
+      prevOp = opcode;
 
       // Check if we just halted
       if (cpuhalted) {

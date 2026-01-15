@@ -37,10 +37,11 @@ constexpr uint8_t JOY2_LEFT = 0x40;   // Joystick 2 left
 constexpr uint8_t JOY2_RIGHT = 0x80;  // Joystick 2 right
 
 // PORTB bits (memory/bank control on XL/XE)
-constexpr uint8_t PORTB_OS_ROM = 0x01;     // OS ROM enable (0=enabled)
-constexpr uint8_t PORTB_BASIC = 0x02;      // BASIC ROM enable (0=enabled)
-constexpr uint8_t PORTB_LED = 0x04;        // Keyboard LED control
-constexpr uint8_t PORTB_SELFTEST = 0x80;   // Self-test ROM enable (0=enabled)
+// All ROM enable bits are active-low (0 = ROM enabled, 1 = RAM/disabled)
+constexpr uint8_t PORTB_OS_ROM = 0x01;     // Bit 0: OS ROM (0=ROM at $C000-$CFFF/$D800-$FFFF)
+constexpr uint8_t PORTB_BASIC = 0x02;      // Bit 1: BASIC ROM (0=ROM at $A000-$BFFF)
+constexpr uint8_t PORTB_LED = 0x04;        // Bit 2: Keyboard LED control
+constexpr uint8_t PORTB_SELFTEST = 0x80;   // Bit 7: Self-test ROM (0=ROM at $5000-$57FF)
 
 // PACTL/PBCTL bits
 constexpr uint8_t PIA_IRQ1 = 0x80;         // IRQ1 status

@@ -23,8 +23,12 @@ void PIA::reset() {
   ddra = 0x00;   // All inputs
   pactl = 0x00;
 
-  // PORTB defaults for XL/XE (all ROM enabled)
-  portb = 0xFF;
+  // PORTB defaults for XL/XE at power-on:
+  // Bit 0 = 0: OS ROM enabled ($C000-$CFFF, $D800-$FFFF)
+  // Bit 1 = 0: BASIC ROM enabled ($A000-$BFFF)
+  // Bit 7 = 1: Self-test ROM disabled
+  // Other bits = 1: default state
+  portb = 0x7C;  // OS enabled, BASIC enabled, self-test disabled
   ddrb = 0x00;
   pbctl = 0x00;
 
