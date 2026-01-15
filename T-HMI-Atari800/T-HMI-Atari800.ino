@@ -53,12 +53,12 @@ static const char *TAG = "T-HMI-Atari800";
  * @brief Core 0 task - runs the main emulator loop
  */
 void core0Task(void *param) {
-  ESP_LOGI(TAG, "core0Task starting setup...");
+  Serial.println("[I][Main] core0Task starting setup...");
   atari800Emu.setup();
-  ESP_LOGI(TAG, "core0Task setup complete");
+  Serial.println("[I][Main] core0Task setup complete");
 
-  vTaskDelay(pdMS_TO_TICKS(1000));
-  ESP_LOGI(TAG, "Atari 800 XL Emulator ready");
+  vTaskDelay(pdMS_TO_TICKS(500));
+  Serial.println("[I][Main] Entering main loop...");
 
   while (true) {
     atari800Emu.loop();
@@ -72,13 +72,14 @@ void setup() {
   Serial.begin(115200);
   esp_log_level_set("*", ESP_LOG_INFO);
 
-  // Wait for serial monitor to connect (3 seconds countdown)
-  for (int i = 3; i > 0; i--) {
-    ESP_LOGI(TAG, "Starting in %d...", i);
+  // Wait for serial monitor to connect (5 seconds countdown)
+  // Use Serial.printf which outputs to USB CDC
+  for (int i = 5; i > 0; i--) {
+    Serial.printf("[I][Main] Starting in %d...\n", i);
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
 
-  ESP_LOGI(TAG, "T-HMI-Atari800 Starting...");
+  Serial.println("[I][Main] T-HMI-Atari800 Starting...");
 
   // Create emulation task on core 0
   xTaskCreatePinnedToCore(
