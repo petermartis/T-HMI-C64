@@ -23,13 +23,13 @@ BUILD_DIR = build-$(BOARD)-$(KEYBOARD)
 
 # Board-specific settings
 ifeq ($(BOARD),T_HMI)
-    FQBN = esp32:esp32:esp32s3:CDCOnBoot=cdc,PartitionScheme=huge_app,FlashSize=16M
+    FQBN = esp32:esp32:esp32s3:CDCOnBoot=cdc,PartitionScheme=huge_app,FlashSize=16M,PSRAM=opi
     BUILD_FLAGS = -DBOARD_T_HMI
 else ifeq ($(BOARD),T_DISPLAY_S3)
-    FQBN = esp32:esp32:esp32s3:CDCOnBoot=cdc,PartitionScheme=huge_app,FlashSize=16M
+    FQBN = esp32:esp32:esp32s3:CDCOnBoot=cdc,PartitionScheme=huge_app,FlashSize=16M,PSRAM=opi
     BUILD_FLAGS = -DBOARD_T_DISPLAY_S3
 else ifeq ($(BOARD),WAVESHARE)
-    FQBN = esp32:esp32:esp32s3:CDCOnBoot=cdc,PartitionScheme=app3M_fat9M_16MB,FlashSize=16M
+    FQBN = esp32:esp32:esp32s3:CDCOnBoot=cdc,PartitionScheme=app3M_fat9M_16MB,FlashSize=16M,PSRAM=opi
     BUILD_FLAGS = -DBOARD_WAVESHARE
 else
     $(error Unknown BOARD: $(BOARD). Use T_HMI, T_DISPLAY_S3, or WAVESHARE)
