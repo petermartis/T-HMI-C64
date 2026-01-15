@@ -198,7 +198,7 @@ void ST7789V::drawFrame(uint16_t frameColor) {
   oldFrameColor = frameColor;
   if (BORDERHEIGHT > 0) {
     ST7789V::copyColor(BORDERWIDTH, 0, 320, BORDERHEIGHT, frameColor);
-    ST7789V::copyColor(BORDERWIDTH, 200 + BORDERHEIGHT, 320, BORDERHEIGHT,
+    ST7789V::copyColor(BORDERWIDTH, BITMAP_HEIGHT + BORDERHEIGHT, 320, BORDERHEIGHT,
                        frameColor);
   }
   if (BORDERWIDTH > 0) {
@@ -209,6 +209,6 @@ void ST7789V::drawFrame(uint16_t frameColor) {
 }
 
 void ST7789V::drawBitmap(uint16_t *bitmap) {
-  ST7789V::copyData(BORDERWIDTH, BORDERHEIGHT, 320, 200, bitmap);
+  ST7789V::copyData(BORDERWIDTH, BORDERHEIGHT, 320, BITMAP_HEIGHT, bitmap);
 }
 #endif

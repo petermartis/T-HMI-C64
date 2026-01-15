@@ -27,8 +27,10 @@
 
 class ST7789V : public DisplayDriver {
 private:
+  // Atari 800 visible area: 320x192 (vs C64's 320x200)
+  static const uint16_t BITMAP_HEIGHT = 192;
   static const uint16_t BORDERWIDTH = (Config::LCDWIDTH - 320) / 2;
-  static const uint16_t BORDERHEIGHT = (Config::LCDHEIGHT - 200) / 2;
+  static const uint16_t BORDERHEIGHT = (Config::LCDHEIGHT - BITMAP_HEIGHT) / 2;
   static const uint16_t FRAMEMEMSIZE =
       MAX(320 * BORDERHEIGHT, BORDERWIDTH *Config::LCDHEIGHT);
 
