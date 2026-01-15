@@ -29,8 +29,13 @@ class NoKeyboard : public KeyboardDriver {
 public:
   void init() override {}
   void scanKeyboard() override {}
+  uint8_t getKBCodeDC01() override { return 0xFF; }
+  uint8_t getKBCodeDC00() override { return 0xFF; }
+  uint8_t getShiftctrlcode() override { return 0; }
+  uint8_t getKBJoyValue() override { return 0xFF; }
   uint8_t *getExtCmdData() override { return nullptr; }
   void sendExtCmdNotification(uint8_t *data, size_t size) override {}
+  void setDetectReleasekey(bool detectreleasekey) override {}
 };
 #elif defined(USE_BLE_KEYBOARD)
 #include "BLEKB.h"
