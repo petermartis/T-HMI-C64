@@ -172,8 +172,9 @@ static const uint8_t boot_code[] = {
     0xA9, 0x40,       // LDA #$40 (VBI enabled)
     0x8D, 0x0E, 0xD4, // STA NMIEN
 
-    // Main loop - just wait
-    0x4C, 0x60, 0xE4, // JMP to self (infinite loop at $E460)
+    // Main loop - infinite loop at $E483 (51 bytes from $E450)
+    // $E483: JMP $E483 - jump to self
+    0x4C, 0x83, 0xE4, // JMP $E483 (infinite loop)
 };
 
 // Display list at $0600 (set up in RAM by OS init)
@@ -239,16 +240,16 @@ void initAtariOSRom(uint8_t *rom) {
     memcpy(rom + 0x2450, boot_code, sizeof(boot_code));
 
     // Set up vectors at $FFFA-$FFFF (offset $3FFA from base)
-    // NMI vector -> $E450 (VBI handler)
-    rom[0x3FFA] = 0x50;
+    // NMI vector -> $E4A0 (simple RTI - after boot code)
+    rom[0x3FFA] = 0xA0;
     rom[0x3FFB] = 0xE4;
     // RESET vector -> $E450 (boot routine)
     rom[0x3FFC] = 0x50;
     rom[0x3FFD] = 0xE4;
-    // IRQ vector -> $E460 (simple RTI)
-    rom[0x3FFE] = 0x60;
+    // IRQ vector -> $E4A0 (simple RTI)
+    rom[0x3FFE] = 0xA0;
     rom[0x3FFF] = 0xE4;
 
-    // RTI at $E460 for IRQ handler
-    rom[0x2460] = 0x40; // RTI
+    // RTI at $E4A0 for IRQ/NMI handlers (offset 0x24A0, well after boot code ends)
+    rom[0x24A0] = 0x40; // RTI
 }
