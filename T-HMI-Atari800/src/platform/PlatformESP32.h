@@ -136,12 +136,12 @@ public:
   void startTask(std::function<void(void *)> taskFunction, uint8_t core,
                  uint8_t prio) override {
     auto *ctx = new TaskContext{std::move(taskFunction)};
-    // 32KB stack for CPU emulation task (6502 emulator needs significant stack)
+    // 16KB stack for CPU emulation task
     TaskHandle_t taskHandle = nullptr;
-    BaseType_t result = xTaskCreatePinnedToCore(taskEntryPoint, "cpuTask", 32768, ctx, prio,
+    BaseType_t result = xTaskCreatePinnedToCore(taskEntryPoint, "cpuTask", 16384, ctx, prio,
                             &taskHandle, core);
     char msg[100];
-    snprintf(msg, sizeof(msg), "[I][Platform] startTask: result=%d handle=%p core=%d\n",
+    snprintf(msg, sizeof(msg), "[I][Platform] startTask: result=%d handle=%p core=%d stack=16KB\n",
              (int)result, (void*)taskHandle, core);
     esp_log_write(ESP_LOG_INFO, "Platform", msg);
   }
