@@ -92,48 +92,60 @@ void Atari800Emu::setup() {
   ESP_LOGI(TAG, "Board initialized");
 
   // Allocate RAM
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Allocating RAM...");
+  ESP_LOGI(TAG, "Allocating RAM (64KB)...");
   ram = new uint8_t[RAM_SIZE];
+  ESP_LOGI(TAG, "RAM allocated at %p", (void*)ram);
   memset(ram, 0, RAM_SIZE);
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "RAM allocated");
+  ESP_LOGI(TAG, "RAM cleared");
 
   // Initialize system with ROMs (use getters to get initialized ROM data)
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Initializing system...");
-  sys.init(ram, getAtariOSRom(), getAtariBasicRom());
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "System initialized");
+  ESP_LOGI(TAG, "Getting OS ROM...");
+  const uint8_t* osRom = getAtariOSRom();
+  ESP_LOGI(TAG, "OS ROM at %p", (void*)osRom);
+  ESP_LOGI(TAG, "Getting BASIC ROM...");
+  const uint8_t* basicRom = getAtariBasicRom();
+  ESP_LOGI(TAG, "BASIC ROM at %p", (void*)basicRom);
+  ESP_LOGI(TAG, "Calling sys.init()...");
+  sys.init(ram, osRom, basicRom);
+  ESP_LOGI(TAG, "System initialized");
 
   // Create keyboard driver
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating keyboard...");
+  ESP_LOGI(TAG, "Creating keyboard...");
   sys.keyboard = Keyboard::create();
   if (sys.keyboard) {
+    ESP_LOGI(TAG, "Initializing keyboard...");
     sys.keyboard->init();
   }
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Keyboard initialized");
+  ESP_LOGI(TAG, "Keyboard done");
 
   // Create joystick driver
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating joystick...");
+  ESP_LOGI(TAG, "Creating joystick...");
   JoystickDriver *joystick = Joystick::create();
   if (joystick) {
+    ESP_LOGI(TAG, "Initializing joystick...");
     joystick->init();
     sys.setJoystick(joystick);
   }
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Joystick initialized");
+  ESP_LOGI(TAG, "Joystick done");
 
   // Start CPU task on core 1
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting CPU task...");
+  ESP_LOGI(TAG, "Starting CPU task on core 1...");
   PlatformManager::getInstance().startTask(
       [this](void *param) { this->cpuCode(param); },
       1,  // Core 1
       5   // Priority
   );
+  ESP_LOGI(TAG, "CPU task started");
 
   // Start keyboard scanner timer (every 8ms)
+  ESP_LOGI(TAG, "Starting keyboard timer...");
   PlatformManager::getInstance().startIntervalTimer(
       [this]() { this->intervalTimerScanKeyboardFunc(); },
       8000  // 8ms
   );
 
   // Start profiling/battery timer (every 1 second)
+  ESP_LOGI(TAG, "Starting battery timer...");
   PlatformManager::getInstance().startIntervalTimer(
       [this]() { this->intervalTimerProfilingBatteryCheckFunc(); },
       1000000  // 1 second
