@@ -68,10 +68,12 @@ void Atari800Emu::intervalTimerProfilingBatteryCheckFunc() {
 }
 
 void Atari800Emu::cpuCode(void *parameter) {
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "CPU task starting, PC=%04X", sys.getPC());
+  Serial.printf("[I][Atari800Emu] cpuCode starting, PC=%04X\n", sys.getPC());
+  Serial.flush();
   vTaskDelay(pdMS_TO_TICKS(50)); // flush log before entering run loop
   sys.run();
-  PlatformManager::getInstance().log(LOG_ERROR, TAG, "CPU task ended unexpectedly!");
+  Serial.println("[E][Atari800Emu] CPU task ended unexpectedly!");
+  Serial.flush();
 }
 
 void Atari800Emu::setup() {
@@ -109,47 +111,51 @@ void Atari800Emu::setup() {
   ESP_LOGI(TAG, "RAM cleared");
 
   // Initialize system with ROMs (use getters to get initialized ROM data)
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Getting OS ROM...");
-  vTaskDelay(pdMS_TO_TICKS(10)); // flush
+  Serial.println("[I][Atari800Emu] Getting OS ROM...");
+  Serial.flush();
   const uint8_t* osRom = getAtariOSRom();
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "OS ROM at %p", (void*)osRom);
-  vTaskDelay(pdMS_TO_TICKS(10));
+  Serial.printf("[I][Atari800Emu] OS ROM at %p\n", (void*)osRom);
+  Serial.flush();
   const uint8_t* basicRom = getAtariBasicRom();
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "BASIC ROM at %p", (void*)basicRom);
-  vTaskDelay(pdMS_TO_TICKS(10));
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Calling sys.init()...");
-  vTaskDelay(pdMS_TO_TICKS(10));
+  Serial.printf("[I][Atari800Emu] BASIC ROM at %p\n", (void*)basicRom);
+  Serial.flush();
+  Serial.println("[I][Atari800Emu] Calling sys.init()...");
+  Serial.flush();
   sys.init(ram, osRom, basicRom);
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "System initialized");
-  vTaskDelay(pdMS_TO_TICKS(10));
+  Serial.printf("[I][Atari800Emu] System initialized, PC=%04X\n", sys.getPC());
+  Serial.flush();
 
   // Create keyboard driver
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating keyboard...");
+  Serial.println("[I][Atari800Emu] Creating keyboard...");
+  Serial.flush();
   sys.keyboard = Keyboard::create();
   if (sys.keyboard) {
     sys.keyboard->init();
   }
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Keyboard done");
-  vTaskDelay(pdMS_TO_TICKS(10));
+  Serial.println("[I][Atari800Emu] Keyboard done");
+  Serial.flush();
 
   // Create joystick driver
+  Serial.println("[I][Atari800Emu] Creating joystick...");
+  Serial.flush();
   JoystickDriver *joystick = Joystick::create();
   if (joystick) {
     joystick->init();
     sys.setJoystick(joystick);
   }
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Joystick done");
-  vTaskDelay(pdMS_TO_TICKS(10));
+  Serial.println("[I][Atari800Emu] Joystick done");
+  Serial.flush();
 
   // Start CPU task on core 1
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting CPU task on core 1...");
-  vTaskDelay(pdMS_TO_TICKS(10));
+  Serial.println("[I][Atari800Emu] Starting CPU task on core 1...");
+  Serial.flush();
   PlatformManager::getInstance().startTask(
       [this](void *param) { this->cpuCode(param); },
       1,  // Core 1
       5   // Priority
   );
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "CPU task created");
+  Serial.println("[I][Atari800Emu] CPU task created");
+  Serial.flush();
   vTaskDelay(pdMS_TO_TICKS(100)); // give CPU task time to start
 
   // Start keyboard scanner timer (every 8ms)

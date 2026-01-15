@@ -33,6 +33,7 @@
 #include <cstdarg>
 #include <esp_log.h>
 #include <functional>
+#include <Arduino.h>
 
 class PlatformESP32 : public Platform {
 private:
@@ -52,15 +53,19 @@ private:
   };
 
   static void taskEntryPoint(void *arg) {
-    // Log immediately when task starts
-    esp_log_write(ESP_LOG_INFO, "TASK", "[I][TASK] Task entry point called\n");
+    // Log immediately when task starts using Serial
+    Serial.println("[I][TASK] Task entry point called");
+    Serial.flush();
     std::unique_ptr<TaskContext> ctx(static_cast<TaskContext *>(arg));
     if (ctx && ctx->func) {
-      esp_log_write(ESP_LOG_INFO, "TASK", "[I][TASK] Calling task function\n");
+      Serial.println("[I][TASK] Calling task function");
+      Serial.flush();
       ctx->func(nullptr);
-      esp_log_write(ESP_LOG_ERROR, "TASK", "[E][TASK] Task function returned!\n");
+      Serial.println("[E][TASK] Task function returned!");
+      Serial.flush();
     } else {
-      esp_log_write(ESP_LOG_ERROR, "TASK", "[E][TASK] ctx or func is null!\n");
+      Serial.println("[E][TASK] ctx or func is null!");
+      Serial.flush();
     }
   }
 
@@ -140,10 +145,9 @@ public:
     TaskHandle_t taskHandle = nullptr;
     BaseType_t result = xTaskCreatePinnedToCore(taskEntryPoint, "cpuTask", 32768, ctx, prio,
                             &taskHandle, core);
-    char msg[100];
-    snprintf(msg, sizeof(msg), "[I][Platform] startTask: result=%d handle=%p core=%d stack=32KB\n",
-             (int)result, (void*)taskHandle, core);
-    esp_log_write(ESP_LOG_INFO, "Platform", msg);
+    Serial.printf("[I][Platform] startTask: result=%d handle=%p core=%d stack=32KB\n",
+                  (int)result, (void*)taskHandle, core);
+    Serial.flush();
   }
 };
 #endif
