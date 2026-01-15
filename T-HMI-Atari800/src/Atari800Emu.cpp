@@ -24,6 +24,7 @@
 #include "roms/atari_basic.h"
 #include <cstring>
 #include <esp_log.h>
+#include <Arduino.h>
 
 static const char *TAG = "Atari800Emu";
 
