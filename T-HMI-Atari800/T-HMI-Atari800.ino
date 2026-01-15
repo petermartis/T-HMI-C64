@@ -39,6 +39,7 @@
 
 #include "src/Atari800Emu.h"
 #include "src/platform/PlatformManager.h"
+#include <esp_log.h>
 
 // Global emulator instance
 Atari800Emu atari800Emu;
@@ -52,12 +53,12 @@ static const char *TAG = "T-HMI-Atari800";
  * @brief Core 0 task - runs the main emulator loop
  */
 void core0Task(void *param) {
-  Serial.println("core0Task starting setup...");
+  ESP_LOGI(TAG, "core0Task starting setup...");
   atari800Emu.setup();
-  Serial.println("core0Task setup complete");
+  ESP_LOGI(TAG, "core0Task setup complete");
 
   vTaskDelay(pdMS_TO_TICKS(1000));
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Atari 800 XL Emulator ready");
+  ESP_LOGI(TAG, "Atari 800 XL Emulator ready");
 
   while (true) {
     atari800Emu.loop();
@@ -69,14 +70,15 @@ void core0Task(void *param) {
  */
 void setup() {
   Serial.begin(115200);
+  esp_log_level_set("*", ESP_LOG_INFO);
 
   // Wait for serial monitor to connect (3 seconds countdown)
   for (int i = 3; i > 0; i--) {
-    Serial.printf("Starting in %d...\n", i);
+    ESP_LOGI(TAG, "Starting in %d...", i);
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
 
-  Serial.println("T-HMI-Atari800 Starting...");
+  ESP_LOGI(TAG, "T-HMI-Atari800 Starting...");
 
   // Create emulation task on core 0
   xTaskCreatePinnedToCore(

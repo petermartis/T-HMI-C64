@@ -23,7 +23,7 @@
 #include "roms/atarixl_os.h"
 #include "roms/atari_basic.h"
 #include <cstring>
-#include <Arduino.h>
+#include <esp_log.h>
 
 static const char *TAG = "Atari800Emu";
 
@@ -70,30 +70,26 @@ void Atari800Emu::cpuCode(void *parameter) {
 }
 
 void Atari800Emu::setup() {
-  Serial.println("DBG: setup() entry"); Serial.flush();
+  ESP_LOGI(TAG, "DBG: setup() entry");
 
   // Initialize platform first
-  Serial.println("DBG: creating platform"); Serial.flush();
+  ESP_LOGI(TAG, "DBG: creating platform");
   PlatformManager::initialize(PlatformNS::create());
-  Serial.println("DBG: platform created"); Serial.flush();
+  ESP_LOGI(TAG, "DBG: platform created");
 
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Atari 800 XL Emulator starting...");
-  Serial.println("DBG: after first log"); Serial.flush();
+  ESP_LOGI(TAG, "Atari 800 XL Emulator starting...");
+  ESP_LOGI(TAG, "DBG: after first log");
 
   // Initialize board driver
-  Serial.println("DBG: about to log 'Creating board'"); Serial.flush();
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating board driver...");
-  Serial.println("DBG: after 'Creating board' log"); Serial.flush();
+  ESP_LOGI(TAG, "DBG: about to create board");
   board = Board::create();
-  Serial.println("DBG: board created"); Serial.flush();
+  ESP_LOGI(TAG, "DBG: board created");
   if (board) {
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "Initializing board...");
-    Serial.println("DBG: calling board->init()"); Serial.flush();
+    ESP_LOGI(TAG, "DBG: calling board->init()");
     board->init();
-    Serial.println("DBG: board->init() done"); Serial.flush();
+    ESP_LOGI(TAG, "DBG: board->init() done");
   }
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Board initialized");
-  Serial.println("DBG: board section complete"); Serial.flush();
+  ESP_LOGI(TAG, "Board initialized");
 
   // Allocate RAM
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Allocating RAM...");
