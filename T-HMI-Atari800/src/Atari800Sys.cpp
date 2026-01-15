@@ -333,8 +333,12 @@ void Atari800Sys::scanKeyboard() {
 }
 
 void Atari800Sys::run() {
+  static const char* TAG = "CPU";
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "run() starting, PC=%04X cpuhalted=%d", pc, cpuhalted);
+
   int64_t lastMeasuredTime = PlatformManager::getInstance().getTimeUS();
   uint32_t totalCycles = 0;
+  uint32_t frameCount = 0;
 
   while (!cpuhalted) {
     // Execute instructions for one scanline
@@ -373,6 +377,15 @@ void Atari800Sys::run() {
 
     // End of frame handling
     if (antic.getScanline() == 0) {
+      frameCount++;
+
+      // Debug: log CPU state every 50 frames
+      if (frameCount % 50 == 0) {
+        PlatformManager::getInstance().log(LOG_INFO, TAG,
+            "frame=%u PC=%04X A=%02X dmactl=%02X",
+            frameCount, pc, a, antic.read(0x00));
+      }
+
       // Play accumulated audio
       pokey.playAudio();
 

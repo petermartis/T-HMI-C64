@@ -67,7 +67,9 @@ void Atari800Emu::intervalTimerProfilingBatteryCheckFunc() {
 }
 
 void Atari800Emu::cpuCode(void *parameter) {
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "CPU task starting, PC=%04X", sys.getPC());
   sys.run();
+  PlatformManager::getInstance().log(LOG_ERROR, TAG, "CPU task ended unexpectedly!");
 }
 
 void Atari800Emu::setup() {
