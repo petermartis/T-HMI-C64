@@ -33,6 +33,7 @@
 #ifndef ATARIXL_OS_H
 #define ATARIXL_OS_H
 
+#include <cstddef>
 #include <cstdint>
 
 // Atari XL OS ROM size: 16KB ($C000-$FFFF)
