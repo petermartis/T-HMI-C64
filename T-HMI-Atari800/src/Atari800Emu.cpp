@@ -100,15 +100,15 @@ void Atari800Emu::setup() {
   ESP_LOGI(TAG, "RAM cleared");
 
   // Initialize system with ROMs (use getters to get initialized ROM data)
-  Serial.println("[DEBUG] Getting OS ROM...");
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Getting OS ROM...");
   const uint8_t* osRom = getAtariOSRom();
-  Serial.printf("[DEBUG] OS ROM at %p\n", (void*)osRom);
-  Serial.println("[DEBUG] Getting BASIC ROM...");
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "OS ROM at %p", (void*)osRom);
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Getting BASIC ROM...");
   const uint8_t* basicRom = getAtariBasicRom();
-  Serial.printf("[DEBUG] BASIC ROM at %p\n", (void*)basicRom);
-  Serial.println("[DEBUG] Calling sys.init()...");
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "BASIC ROM at %p", (void*)basicRom);
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Calling sys.init()...");
   sys.init(ram, osRom, basicRom);
-  Serial.println("[DEBUG] System initialized");
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "System initialized");
 
   // Create keyboard driver
   ESP_LOGI(TAG, "Creating keyboard...");
@@ -160,7 +160,7 @@ void Atari800Emu::loop() {
 
   // Debug: log loop entry every 50 calls
   if (++loopCount % 50 == 0) {
-    Serial.printf("[DEBUG] loop() called %lu times, cntRefreshs=%d\n", loopCount, sys.antic.cntRefreshs.load());
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "loop() #%lu, refreshs=%d", loopCount, sys.antic.cntRefreshs.load());
   }
 
   // Main loop - refresh display

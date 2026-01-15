@@ -17,9 +17,12 @@
 #include "ANTIC.h"
 #include "GTIA.h"
 #include "display/DisplayFactory.h"
+#include "platform/PlatformManager.h"
 #include <cstring>
 #include <esp_log.h>
 #include <Arduino.h>
+
+static const char* ATAG = "ANTIC";
 
 // Mode line parameters: scanlines, bytes per line, characters/pixels
 static const struct {
@@ -51,31 +54,31 @@ ANTIC::ANTIC() : ram(nullptr), bitmap(nullptr), display(nullptr), gtia(nullptr) 
 }
 
 void ANTIC::init(uint8_t *ram, GTIA *gtia) {
-  Serial.println("[ANTIC] init() starting");
+  PlatformManager::getInstance().log(LOG_INFO, ATAG, "init() starting");
   this->ram = ram;
   this->gtia = gtia;
 
   // Initialize palette (deferred from constructor to avoid FP during static init)
   palette.init();
-  Serial.println("[ANTIC] palette initialized");
+  PlatformManager::getInstance().log(LOG_INFO, ATAG, "palette initialized");
 
   // Allocate bitmap for ATARI_WIDTH x ATARI_HEIGHT pixels (16-bit RGB565)
   bitmap = new uint16_t[ATARI_WIDTH * ATARI_HEIGHT];
   memset(bitmap, 0, ATARI_WIDTH * ATARI_HEIGHT * sizeof(uint16_t));
-  Serial.printf("[ANTIC] bitmap allocated: %p (%dx%d)\n", (void*)bitmap, ATARI_WIDTH, ATARI_HEIGHT);
+  PlatformManager::getInstance().log(LOG_INFO, ATAG, "bitmap at %p (%dx%d)", (void*)bitmap, ATARI_WIDTH, ATARI_HEIGHT);
 
   // Create display driver
   display = Display::create();
-  Serial.printf("[ANTIC] display created: %p\n", (void*)display);
+  PlatformManager::getInstance().log(LOG_INFO, ATAG, "display created: %p", (void*)display);
   if (display) {
     display->init();
-    Serial.println("[ANTIC] display initialized");
+    PlatformManager::getInstance().log(LOG_INFO, ATAG, "display initialized");
   } else {
-    Serial.println("[ANTIC] ERROR: display is NULL!");
+    PlatformManager::getInstance().log(LOG_ERROR, ATAG, "display is NULL!");
   }
 
   reset();
-  Serial.println("[ANTIC] init() complete");
+  PlatformManager::getInstance().log(LOG_INFO, ATAG, "init() complete");
 }
 
 void ANTIC::reset() {
@@ -590,8 +593,9 @@ void ANTIC::refresh() {
     // Debug: log ANTIC state every 50 frames (~1 second)
     if (++dbgCount >= 50) {
       dbgCount = 0;
-      Serial.printf("[ANTIC] dmactl=%02X dlist=%04X chbase=%02X bg=%02X scanline=%d\n",
-               dmactl, dlist, chbase, gtia->getBackgroundColor(), scanline);
+      PlatformManager::getInstance().log(LOG_INFO, ATAG,
+          "dmactl=%02X dlist=%04X chbase=%02X bg=%02X",
+          dmactl, dlist, chbase, gtia->getBackgroundColor());
     }
   }
   cntRefreshs++;
