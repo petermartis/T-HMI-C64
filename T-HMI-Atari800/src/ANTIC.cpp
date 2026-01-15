@@ -287,10 +287,19 @@ void ANTIC::processDisplayList() {
   }
 }
 
+// First scanline of visible area in bitmap
+static constexpr int FIRST_VISIBLE_SCANLINE = 8;
+
 void ANTIC::drawBlankLine() {
+  // Only draw to bitmap if within visible area
+  int bitmapLine = scanline - FIRST_VISIBLE_SCANLINE;
+  if (bitmapLine < 0 || bitmapLine >= ATARI_HEIGHT) {
+    return;  // Outside bitmap bounds - don't write
+  }
+
   // Fill scanline with background color from GTIA
   uint16_t bgColor = palette.colorToRGB565(gtia->getBackgroundColor());
-  uint16_t *line = &bitmap[scanline * ATARI_WIDTH];
+  uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
   for (int x = 0; x < ATARI_WIDTH; x++) {
     line[x] = bgColor;
   }
@@ -299,6 +308,11 @@ void ANTIC::drawBlankLine() {
 void ANTIC::drawCharacterMode2() {
   // ANTIC Mode 2: 40 characters, 8 scanlines per char, 2 colors
   // This is BASIC GR.0 (standard text mode)
+  int bitmapLine = scanline - FIRST_VISIBLE_SCANLINE;
+  if (bitmapLine < 0 || bitmapLine >= ATARI_HEIGHT) {
+    return;  // Outside bitmap bounds
+  }
+
   const uint16_t *colors = palette.getAtariColors();
   uint8_t bgColor = gtia->getBackgroundColor();
   uint8_t fgColor = gtia->getPlayfieldColor(0) | (gtia->getPlayfieldColor(0) & 0x0F);
@@ -307,7 +321,7 @@ void ANTIC::drawCharacterMode2() {
   uint16_t fgRGB = colors[fgColor];
 
   uint16_t charBase = chbase << 8;
-  uint16_t *line = &bitmap[scanline * ATARI_WIDTH];
+  uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
   uint8_t charRow = rowInMode;
 
   // Apply character control
@@ -345,6 +359,11 @@ void ANTIC::drawCharacterMode2() {
 
 void ANTIC::drawCharacterMode4() {
   // ANTIC Mode 4: 40 characters, 8 scanlines, 4 colors
+  int bitmapLine = scanline - FIRST_VISIBLE_SCANLINE;
+  if (bitmapLine < 0 || bitmapLine >= ATARI_HEIGHT) {
+    return;  // Outside bitmap bounds
+  }
+
   const uint16_t *colors = palette.getAtariColors();
   uint8_t colorRegs[4] = {
       gtia->getBackgroundColor(),
@@ -353,7 +372,7 @@ void ANTIC::drawCharacterMode4() {
       gtia->getPlayfieldColor(2)};
 
   uint16_t charBase = chbase << 8;
-  uint16_t *line = &bitmap[scanline * ATARI_WIDTH];
+  uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
   uint8_t charRow = rowInMode;
 
   int xpos = 0;
@@ -376,10 +395,15 @@ void ANTIC::drawCharacterMode4() {
 
 void ANTIC::drawCharacterMode6() {
   // ANTIC Mode 6: 20 characters, 8 scanlines, 5 colors
+  int bitmapLine = scanline - FIRST_VISIBLE_SCANLINE;
+  if (bitmapLine < 0 || bitmapLine >= ATARI_HEIGHT) {
+    return;  // Outside bitmap bounds
+  }
+
   const uint16_t *colors = palette.getAtariColors();
 
   uint16_t charBase = chbase << 8;
-  uint16_t *line = &bitmap[scanline * ATARI_WIDTH];
+  uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
   uint8_t charRow = rowInMode;
 
   int xpos = 0;
@@ -419,6 +443,11 @@ void ANTIC::drawCharacterMode6() {
 
 void ANTIC::drawBitmapModeD() {
   // ANTIC Mode D: 160x2, 4 colors (GR.7)
+  int bitmapLine = scanline - FIRST_VISIBLE_SCANLINE;
+  if (bitmapLine < 0 || bitmapLine >= ATARI_HEIGHT) {
+    return;  // Outside bitmap bounds
+  }
+
   const uint16_t *colors = palette.getAtariColors();
   uint8_t colorRegs[4] = {
       gtia->getBackgroundColor(),
@@ -426,7 +455,7 @@ void ANTIC::drawBitmapModeD() {
       gtia->getPlayfieldColor(1),
       gtia->getPlayfieldColor(2)};
 
-  uint16_t *line = &bitmap[scanline * ATARI_WIDTH];
+  uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
 
   int xpos = 0;
   for (int byte = 0; byte < 40 && xpos < ATARI_WIDTH; byte++) {
@@ -445,6 +474,11 @@ void ANTIC::drawBitmapModeD() {
 
 void ANTIC::drawBitmapModeE() {
   // ANTIC Mode E: 160x1, 4 colors (GR.15)
+  int bitmapLine = scanline - FIRST_VISIBLE_SCANLINE;
+  if (bitmapLine < 0 || bitmapLine >= ATARI_HEIGHT) {
+    return;  // Outside bitmap bounds
+  }
+
   const uint16_t *colors = palette.getAtariColors();
   uint8_t colorRegs[4] = {
       gtia->getBackgroundColor(),
@@ -452,7 +486,7 @@ void ANTIC::drawBitmapModeE() {
       gtia->getPlayfieldColor(1),
       gtia->getPlayfieldColor(2)};
 
-  uint16_t *line = &bitmap[scanline * ATARI_WIDTH];
+  uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
 
   int xpos = 0;
   for (int byte = 0; byte < 40 && xpos < ATARI_WIDTH; byte++) {
@@ -471,11 +505,16 @@ void ANTIC::drawBitmapModeE() {
 
 void ANTIC::drawBitmapModeF() {
   // ANTIC Mode F: 320x1, 2 colors (GR.8 hires)
+  int bitmapLine = scanline - FIRST_VISIBLE_SCANLINE;
+  if (bitmapLine < 0 || bitmapLine >= ATARI_HEIGHT) {
+    return;  // Outside bitmap bounds
+  }
+
   const uint16_t *colors = palette.getAtariColors();
   uint16_t bgRGB = colors[gtia->getBackgroundColor()];
   uint16_t fgRGB = colors[gtia->getPlayfieldColor(0) | (gtia->getPlayfieldColor(0) & 0x0F)];
 
-  uint16_t *line = &bitmap[scanline * ATARI_WIDTH];
+  uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
 
   int xpos = 0;
   for (int byte = 0; byte < 40 && xpos < ATARI_WIDTH; byte++) {
