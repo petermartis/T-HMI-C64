@@ -130,7 +130,8 @@ public:
   void startTask(std::function<void(void *)> taskFunction, uint8_t core,
                  uint8_t prio) override {
     auto *ctx = new TaskContext{std::move(taskFunction)};
-    xTaskCreatePinnedToCore(taskEntryPoint, "genericTask", 10000, ctx, prio,
+    // 32KB stack for CPU emulation task (6502 emulator needs significant stack)
+    xTaskCreatePinnedToCore(taskEntryPoint, "genericTask", 32768, ctx, prio,
                             nullptr, core);
   }
 };
