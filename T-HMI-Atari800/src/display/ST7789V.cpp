@@ -132,7 +132,12 @@ void ST7789V::init() {
 
   GPIO.out1_w1ts.val = (1ULL << (Config::BL - 32)); // backlight
 
-  oldFrameColor = 0;
+  // Initialize to 0xFFFF so first drawFrame() will always draw
+  // (prevents skipping draw when background is black/0x0000)
+  oldFrameColor = 0xFFFF;
+
+  // Clear entire screen to black on init
+  ST7789V::copyColor(0, 0, Config::LCDWIDTH, Config::LCDHEIGHT, 0x0000);
 }
 
 void ST7789V::copyinit(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h) {
