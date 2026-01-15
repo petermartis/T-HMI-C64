@@ -68,12 +68,10 @@ void Atari800Emu::intervalTimerProfilingBatteryCheckFunc() {
 }
 
 void Atari800Emu::cpuCode(void *parameter) {
-  Serial.printf("[I][Atari800Emu] cpuCode starting, PC=%04X\n", sys.getPC());
-  Serial.flush();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "cpuCode starting, PC=%04X", sys.getPC());
   vTaskDelay(pdMS_TO_TICKS(50)); // flush log before entering run loop
   sys.run();
-  Serial.println("[E][Atari800Emu] CPU task ended unexpectedly!");
-  Serial.flush();
+  PlatformManager::getInstance().log(LOG_ERROR, TAG, "CPU task ended unexpectedly!");
 }
 
 void Atari800Emu::setup() {
@@ -99,63 +97,58 @@ void Atari800Emu::setup() {
   ESP_LOGI(TAG, "Board initialized");
 
   // Allocate RAM in PSRAM (external memory) to save internal RAM for task stacks
-  ESP_LOGI(TAG, "Allocating RAM (64KB) in PSRAM...");
-  ram = (uint8_t*)heap_caps_malloc(RAM_SIZE, MALLOC_CAP_SPIRAM);
+  // Try ps_malloc first (Arduino's PSRAM allocator), fallback to heap_caps, then internal
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Allocating RAM (64KB), trying PSRAM...");
+  ram = (uint8_t*)ps_malloc(RAM_SIZE);
+  if (!ram) {
+    PlatformManager::getInstance().log(LOG_WARN, TAG, "ps_malloc failed, trying heap_caps...");
+    ram = (uint8_t*)heap_caps_malloc(RAM_SIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+  }
   if (!ram) {
     // Fallback to internal RAM if PSRAM not available
-    ESP_LOGW(TAG, "PSRAM not available, using internal RAM");
+    PlatformManager::getInstance().log(LOG_WARN, TAG, "PSRAM not available, using internal RAM");
     ram = new uint8_t[RAM_SIZE];
+  } else {
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "RAM allocated in PSRAM");
   }
-  ESP_LOGI(TAG, "RAM allocated at %p", (void*)ram);
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "RAM at %p", (void*)ram);
   memset(ram, 0, RAM_SIZE);
-  ESP_LOGI(TAG, "RAM cleared");
 
   // Initialize system with ROMs (use getters to get initialized ROM data)
-  Serial.println("[I][Atari800Emu] Getting OS ROM...");
-  Serial.flush();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Getting OS ROM...");
   const uint8_t* osRom = getAtariOSRom();
-  Serial.printf("[I][Atari800Emu] OS ROM at %p\n", (void*)osRom);
-  Serial.flush();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "OS ROM at %p", (void*)osRom);
   const uint8_t* basicRom = getAtariBasicRom();
-  Serial.printf("[I][Atari800Emu] BASIC ROM at %p\n", (void*)basicRom);
-  Serial.flush();
-  Serial.println("[I][Atari800Emu] Calling sys.init()...");
-  Serial.flush();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "BASIC ROM at %p", (void*)basicRom);
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Calling sys.init()...");
   sys.init(ram, osRom, basicRom);
-  Serial.printf("[I][Atari800Emu] System initialized, PC=%04X\n", sys.getPC());
-  Serial.flush();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "System initialized, PC=%04X", sys.getPC());
 
   // Create keyboard driver
-  Serial.println("[I][Atari800Emu] Creating keyboard...");
-  Serial.flush();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating keyboard...");
   sys.keyboard = Keyboard::create();
   if (sys.keyboard) {
     sys.keyboard->init();
   }
-  Serial.println("[I][Atari800Emu] Keyboard done");
-  Serial.flush();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Keyboard done");
 
   // Create joystick driver
-  Serial.println("[I][Atari800Emu] Creating joystick...");
-  Serial.flush();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Creating joystick...");
   JoystickDriver *joystick = Joystick::create();
   if (joystick) {
     joystick->init();
     sys.setJoystick(joystick);
   }
-  Serial.println("[I][Atari800Emu] Joystick done");
-  Serial.flush();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Joystick done");
 
   // Start CPU task on core 1
-  Serial.println("[I][Atari800Emu] Starting CPU task on core 1...");
-  Serial.flush();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting CPU task on core 1...");
   PlatformManager::getInstance().startTask(
       [this](void *param) { this->cpuCode(param); },
       1,  // Core 1
       5   // Priority
   );
-  Serial.println("[I][Atari800Emu] CPU task created");
-  Serial.flush();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "CPU task created");
   vTaskDelay(pdMS_TO_TICKS(100)); // give CPU task time to start
 
   // Start keyboard scanner timer (every 8ms)

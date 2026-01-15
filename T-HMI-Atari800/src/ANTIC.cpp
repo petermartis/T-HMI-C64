@@ -66,14 +66,21 @@ void ANTIC::init(uint8_t *ram, GTIA *gtia) {
   // Allocate bitmap in PSRAM for ATARI_WIDTH x ATARI_HEIGHT pixels (16-bit RGB565)
   // Using PSRAM (external RAM) to save internal RAM for task stacks
   size_t bitmapSize = ATARI_WIDTH * ATARI_HEIGHT * sizeof(uint16_t);
-  bitmap = (uint16_t*)heap_caps_malloc(bitmapSize, MALLOC_CAP_SPIRAM);
+  PlatformManager::getInstance().log(LOG_INFO, ATAG, "Allocating bitmap (%u bytes), trying PSRAM...", bitmapSize);
+  bitmap = (uint16_t*)ps_malloc(bitmapSize);
+  if (!bitmap) {
+    PlatformManager::getInstance().log(LOG_WARN, ATAG, "ps_malloc failed, trying heap_caps...");
+    bitmap = (uint16_t*)heap_caps_malloc(bitmapSize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+  }
   if (!bitmap) {
     // Fallback to internal RAM if PSRAM not available
     PlatformManager::getInstance().log(LOG_WARN, ATAG, "PSRAM not available, using internal RAM");
     bitmap = new uint16_t[ATARI_WIDTH * ATARI_HEIGHT];
+  } else {
+    PlatformManager::getInstance().log(LOG_INFO, ATAG, "Bitmap allocated in PSRAM");
   }
   memset(bitmap, 0, bitmapSize);
-  PlatformManager::getInstance().log(LOG_INFO, ATAG, "bitmap at %p (%dx%d) size=%u", (void*)bitmap, ATARI_WIDTH, ATARI_HEIGHT, bitmapSize);
+  PlatformManager::getInstance().log(LOG_INFO, ATAG, "bitmap at %p (%dx%d)", (void*)bitmap, ATARI_WIDTH, ATARI_HEIGHT);
 
   // Create display driver
   display = Display::create();

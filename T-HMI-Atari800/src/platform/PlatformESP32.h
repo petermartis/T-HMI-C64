@@ -53,19 +53,15 @@ private:
   };
 
   static void taskEntryPoint(void *arg) {
-    // Log immediately when task starts using Serial
-    Serial.println("[I][TASK] Task entry point called");
-    Serial.flush();
+    // Log immediately when task starts using esp_log_write (Serial doesn't work reliably)
+    esp_log_write(ESP_LOG_INFO, "TASK", "[I][TASK] Task entry point called\n");
     std::unique_ptr<TaskContext> ctx(static_cast<TaskContext *>(arg));
     if (ctx && ctx->func) {
-      Serial.println("[I][TASK] Calling task function");
-      Serial.flush();
+      esp_log_write(ESP_LOG_INFO, "TASK", "[I][TASK] Calling task function\n");
       ctx->func(nullptr);
-      Serial.println("[E][TASK] Task function returned!");
-      Serial.flush();
+      esp_log_write(ESP_LOG_ERROR, "TASK", "[E][TASK] Task function returned!\n");
     } else {
-      Serial.println("[E][TASK] ctx or func is null!");
-      Serial.flush();
+      esp_log_write(ESP_LOG_ERROR, "TASK", "[E][TASK] ctx or func is null!\n");
     }
   }
 
@@ -145,9 +141,10 @@ public:
     TaskHandle_t taskHandle = nullptr;
     BaseType_t result = xTaskCreatePinnedToCore(taskEntryPoint, "cpuTask", 32768, ctx, prio,
                             &taskHandle, core);
-    Serial.printf("[I][Platform] startTask: result=%d handle=%p core=%d stack=32KB\n",
-                  (int)result, (void*)taskHandle, core);
-    Serial.flush();
+    char msg[100];
+    snprintf(msg, sizeof(msg), "[I][Platform] startTask: result=%d handle=%p core=%d stack=32KB\n",
+             (int)result, (void*)taskHandle, core);
+    esp_log_write(ESP_LOG_INFO, "Platform", msg);
   }
 };
 #endif
