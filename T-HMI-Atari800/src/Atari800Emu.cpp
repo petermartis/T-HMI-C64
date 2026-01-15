@@ -25,6 +25,7 @@
 #include <cstring>
 #include <esp_log.h>
 #include <Arduino.h>
+#include <esp_heap_caps.h>
 
 static const char *TAG = "Atari800Emu";
 
@@ -95,9 +96,14 @@ void Atari800Emu::setup() {
   }
   ESP_LOGI(TAG, "Board initialized");
 
-  // Allocate RAM
-  ESP_LOGI(TAG, "Allocating RAM (64KB)...");
-  ram = new uint8_t[RAM_SIZE];
+  // Allocate RAM in PSRAM (external memory) to save internal RAM for task stacks
+  ESP_LOGI(TAG, "Allocating RAM (64KB) in PSRAM...");
+  ram = (uint8_t*)heap_caps_malloc(RAM_SIZE, MALLOC_CAP_SPIRAM);
+  if (!ram) {
+    // Fallback to internal RAM if PSRAM not available
+    ESP_LOGW(TAG, "PSRAM not available, using internal RAM");
+    ram = new uint8_t[RAM_SIZE];
+  }
   ESP_LOGI(TAG, "RAM allocated at %p", (void*)ram);
   memset(ram, 0, RAM_SIZE);
   ESP_LOGI(TAG, "RAM cleared");

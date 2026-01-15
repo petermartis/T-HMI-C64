@@ -21,6 +21,7 @@
 #include <cstring>
 #include <esp_log.h>
 #include <Arduino.h>
+#include <esp_heap_caps.h>
 
 static const char* ATAG = "ANTIC";
 
@@ -62,10 +63,17 @@ void ANTIC::init(uint8_t *ram, GTIA *gtia) {
   palette.init();
   PlatformManager::getInstance().log(LOG_INFO, ATAG, "palette initialized");
 
-  // Allocate bitmap for ATARI_WIDTH x ATARI_HEIGHT pixels (16-bit RGB565)
-  bitmap = new uint16_t[ATARI_WIDTH * ATARI_HEIGHT];
-  memset(bitmap, 0, ATARI_WIDTH * ATARI_HEIGHT * sizeof(uint16_t));
-  PlatformManager::getInstance().log(LOG_INFO, ATAG, "bitmap at %p (%dx%d)", (void*)bitmap, ATARI_WIDTH, ATARI_HEIGHT);
+  // Allocate bitmap in PSRAM for ATARI_WIDTH x ATARI_HEIGHT pixels (16-bit RGB565)
+  // Using PSRAM (external RAM) to save internal RAM for task stacks
+  size_t bitmapSize = ATARI_WIDTH * ATARI_HEIGHT * sizeof(uint16_t);
+  bitmap = (uint16_t*)heap_caps_malloc(bitmapSize, MALLOC_CAP_SPIRAM);
+  if (!bitmap) {
+    // Fallback to internal RAM if PSRAM not available
+    PlatformManager::getInstance().log(LOG_WARN, ATAG, "PSRAM not available, using internal RAM");
+    bitmap = new uint16_t[ATARI_WIDTH * ATARI_HEIGHT];
+  }
+  memset(bitmap, 0, bitmapSize);
+  PlatformManager::getInstance().log(LOG_INFO, ATAG, "bitmap at %p (%dx%d) size=%u", (void*)bitmap, ATARI_WIDTH, ATARI_HEIGHT, bitmapSize);
 
   // Create display driver
   display = Display::create();
