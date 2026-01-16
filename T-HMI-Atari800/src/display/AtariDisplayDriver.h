@@ -55,19 +55,19 @@ private:
         r = g = b = lightness;
       } else {
         // Map Atari hue (1-15) to HSL hue angle (0-360)
-        // Atari hue 1 = orange (~30°), going through spectrum
-        // Hue 9 should be blue (~240°)
-        // Formula: starting at orange (30°), each step adds ~24° (360/15)
+        // The Atari color wheel runs COUNTERCLOCKWISE starting from orange:
+        // Hue 1 = orange (~30°), going backwards through red, purple, blue, cyan, green
+        // Hue 9 = blue (~198-210°), Hue 12 = cyan (~126°), Hue 14 = green (~78°)
         float hslHue;
         if (isPAL) {
-          // PAL: Hue 9 = blue, so we need offset to make that happen
-          // (9-1) * 24 + offset = 240 => 192 + offset = 240 => offset = 48
-          hslHue = (hue - 1) * 24.0f + 48.0f;
+          // PAL: Start at orange (30°) and go counterclockwise 24° per step
+          hslHue = 30.0f - (hue - 1) * 24.0f;
         } else {
-          // NTSC: slightly different color wheel
-          hslHue = (hue - 1) * 24.0f + 30.0f;
+          // NTSC: slightly different phase, start at ~45°
+          hslHue = 45.0f - (hue - 1) * 24.0f;
         }
-        if (hslHue >= 360.0f) hslHue -= 360.0f;
+        // Wrap negative values
+        if (hslHue < 0.0f) hslHue += 360.0f;
 
         // HSL to RGB conversion
         float h = hslHue / 360.0f;
