@@ -108,7 +108,7 @@ void Atari800Sys::reset() {
   pia.reset();
 
   // Sync banking state with PIA's initial PORTB value
-  // PIA resets with portb = 0x7C (OS and BASIC enabled)
+  // PIA resets with portb = 0xFC (OS and BASIC enabled, self-test disabled)
   updateBanking();
 
   // Read reset vector from OS ROM
@@ -121,15 +121,20 @@ void Atari800Sys::reset() {
 void Atari800Sys::updateBanking() {
   uint8_t portb = pia.getPortB();
   bool wasOsEnabled = osRomEnabled;
+  bool wasBasicEnabled = basicRomEnabled;
   osRomEnabled = (portb & PORTB_OS_ROM) == 0;
   basicRomEnabled = (portb & PORTB_BASIC) == 0;
   selfTestEnabled = (portb & PORTB_SELFTEST) == 0;
 
-  // Debug: log when OS ROM enable changes
-  if (wasOsEnabled != osRomEnabled) {
+  // Update TRIG3 to reflect BASIC/cartridge state
+  // On XL/XE, TRIG3=0 means cartridge/BASIC present, TRIG3=1 means not present
+  gtia.setCartridgePresent(basicRomEnabled);
+
+  // Debug: log when banking changes
+  if (wasOsEnabled != osRomEnabled || wasBasicEnabled != basicRomEnabled) {
     static const char* TAG = "BANK";
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "PORTB=%02X osRom=%d->%d basic=%d self=%d",
-        portb, wasOsEnabled, osRomEnabled, basicRomEnabled, selfTestEnabled);
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "PORTB=%02X osRom=%d basic=%d->%d self=%d TRIG3=%d",
+        portb, osRomEnabled, wasBasicEnabled, basicRomEnabled, selfTestEnabled, basicRomEnabled ? 0 : 1);
   }
 }
 
@@ -146,15 +151,31 @@ uint8_t Atari800Sys::getMem(uint16_t addr) {
   // BASIC ROM area ($A000-$BFFF)
   if (addr < 0xC000) {
     if (basicRomEnabled && basicRom) {
-      // Debug: log first few BASIC ROM accesses
-      static uint32_t basicAccessCount = 0;
-      if (basicAccessCount < 20) {
-        static const char* TAG = "BASIC";
-        PlatformManager::getInstance().log(LOG_INFO, TAG, "Read BASIC ROM $%04X = $%02X",
-            addr, basicRom[addr - 0xA000]);
-        basicAccessCount++;
+      uint8_t val = basicRom[addr - 0xA000];
+      // Debug: log reads of cartridge vectors ($BFFA-$BFFF)
+      static uint8_t cartVecReadCount = 0;
+      if (addr >= 0xBFFA && cartVecReadCount < 30) {
+        static const char* TAG = "CARTVEC";
+        const char* vecName = "";
+        switch (addr) {
+          case 0xBFFA: vecName = "FLAGS"; break;
+          case 0xBFFB: vecName = "RESERVED"; break;
+          case 0xBFFC: vecName = "RUN_LO"; break;
+          case 0xBFFD: vecName = "RUN_HI"; break;
+          case 0xBFFE: vecName = "INIT_LO"; break;
+          case 0xBFFF: vecName = "INIT_HI"; break;
+        }
+        PlatformManager::getInstance().log(LOG_INFO, TAG, "Read $%04X (%s) = $%02X", addr, vecName, val);
+        cartVecReadCount++;
       }
-      return basicRom[addr - 0xA000];
+      return val;
+    }
+    // BASIC disabled - reading from RAM
+    static uint8_t basicDisabledReadCount = 0;
+    if (addr >= 0xBFFA && basicDisabledReadCount < 10) {
+      static const char* TAG = "CARTVEC";
+      PlatformManager::getInstance().log(LOG_INFO, TAG, "Read $%04X from RAM (BASIC disabled) = $%02X", addr, ram[addr]);
+      basicDisabledReadCount++;
     }
     return ram[addr];
   }
@@ -487,6 +508,30 @@ void Atari800Sys::run() {
         PlatformManager::getInstance().log(LOG_INFO, TAG, "BASIC exec: PC=$%04X op=$%02X A=%02X X=%02X Y=%02X",
             instrPC, opcode, a, x, y);
         basicExecCount++;
+      }
+
+      // Debug: Trace JMP/JSR to BASIC area
+      static uint8_t jmpToBasicCount = 0;
+      if (jmpToBasicCount < 20) {
+        // JMP absolute ($4C), JSR ($20)
+        if ((opcode == 0x4C || opcode == 0x20) && instrPC < 0xA000) {
+          uint16_t target = getMem(instrPC + 1) | (getMem(instrPC + 2) << 8);
+          if (target >= 0xA000 && target < 0xC000) {
+            PlatformManager::getInstance().log(LOG_INFO, TAG, "%s to BASIC: PC=$%04X -> $%04X",
+                opcode == 0x4C ? "JMP" : "JSR", instrPC, target);
+            jmpToBasicCount++;
+          }
+        }
+        // JMP indirect ($6C)
+        if (opcode == 0x6C && instrPC < 0xA000) {
+          uint16_t ptr = getMem(instrPC + 1) | (getMem(instrPC + 2) << 8);
+          uint16_t target = getMem(ptr) | (getMem(ptr + 1) << 8);
+          if (target >= 0xA000 && target < 0xC000) {
+            PlatformManager::getInstance().log(LOG_INFO, TAG, "JMP ($%04X) to BASIC: PC=$%04X -> $%04X",
+                ptr, instrPC, target);
+            jmpToBasicCount++;
+          }
+        }
       }
 
       // Track PC before execution

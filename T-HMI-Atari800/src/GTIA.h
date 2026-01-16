@@ -203,6 +203,10 @@ public:
   void setTrigger(uint8_t index, bool pressed);
   void setConsoleKey(uint8_t key, bool pressed);
 
+  // XL/XE cartridge detection via TRIG3
+  // On XL/XE, TRIG3 reads 0 when cartridge/BASIC is enabled, 1 when disabled
+  void setCartridgePresent(bool present) { trig[3] = present ? 0 : 1; }
+
   // Configuration
   void setPAL(bool pal) { isPAL = pal; }
 };

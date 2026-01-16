@@ -50,9 +50,12 @@ void GTIA::reset() {
   memset(p2pl, 0, sizeof(p2pl));
 
   // Triggers not pressed (active-low)
-  for (int i = 0; i < 4; i++) {
-    trig[i] = 1;
-  }
+  // TRIG0-2: Joystick triggers (1 = not pressed)
+  // TRIG3: On XL/XE, indicates cartridge/BASIC present (0 = present, 1 = not present)
+  trig[0] = 1;
+  trig[1] = 1;
+  trig[2] = 1;
+  trig[3] = 0;  // XL: 0 = cartridge/BASIC present (will be updated by banking)
 
   // Console switches not pressed (active-low)
   consol = 0x07;
@@ -112,6 +115,16 @@ uint8_t GTIA::read(uint8_t addr) {
   case TRIG2:
     return trig[2];
   case TRIG3:
+    // On XL/XE, TRIG3=0 means cartridge/BASIC present
+    {
+      static uint8_t trig3ReadCount = 0;
+      if (trig3ReadCount < 10) {
+        // Debug log TRIG3 reads (limited to avoid spam)
+        extern void logPIA(const char* msg, uint8_t val);
+        logPIA("TRIG3 read (BASIC present?)", trig[3]);
+        trig3ReadCount++;
+      }
+    }
     return trig[3];
 
   // PAL/NTSC flag
