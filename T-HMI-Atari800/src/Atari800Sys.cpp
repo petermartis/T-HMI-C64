@@ -466,6 +466,18 @@ void Atari800Sys::run() {
         PlatformManager::getInstance().log(LOG_INFO, TAG, "instr#%u: PC=%04X op=%02X", instrCount, instrPC, opcode);
       }
 
+      // Debug: Trace CIOV calls (Central I/O)
+      static uint8_t cioCallCount = 0;
+      if (instrPC == 0xE456 && cioCallCount < 10) {
+        // CIO entry - log IOCB being used (X register / 16)
+        PlatformManager::getInstance().log(LOG_INFO, TAG, "CIOV called! X=%02X (IOCB #%d) A=%02X", x, x >> 4, a);
+        // Also log ICCOM (command) at $0342 + X
+        uint8_t iccom = getMem(0x0342 + x);
+        uint8_t icax1 = getMem(0x034A + x);
+        PlatformManager::getInstance().log(LOG_INFO, TAG, "  ICCOM=$%02X ICAX1=$%02X", iccom, icax1);
+        cioCallCount++;
+      }
+
       // Track PC before execution
       static uint16_t prevPC = 0;
       static uint8_t prevOp = 0;
