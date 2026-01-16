@@ -357,8 +357,9 @@ void ANTIC::drawCharacterMode2() {
     // Read character data from ROM (character set at $E000 in OS ROM)
     uint8_t charData = readMemWithROM((charBase + charCode * 8 + charRow) & 0xFFFF);
 
-    // Apply inversion
-    if (invert ^ charInvert) {
+    // Apply inversion: CHACTL bit 1 enables inversion for characters with bit 7 set
+    // When both conditions are true, the character displays inverted (e.g., cursor)
+    if (invert && charInvert) {
       charData ^= 0xFF;
     }
 
@@ -680,12 +681,23 @@ void ANTIC::refresh() {
           ram[dlist+4], ram[dlist+5], ram[dlist+6], ram[dlist+7]);
       // Get screen address from LMS instruction (typically at dlist+3)
       uint16_t screenAddr = ram[dlist+4] | (ram[dlist+5] << 8);
+      // Dump first 3 lines of screen memory (40 chars each)
       PlatformManager::getInstance().log(LOG_INFO, ATAG,
-          "Screen@%04X: %02X %02X %02X %02X %02X %02X %02X %02X",
+          "Scr@%04X L0: %02X %02X %02X %02X %02X %02X %02X %02X",
           screenAddr, ram[screenAddr], ram[screenAddr+1], ram[screenAddr+2],
           ram[screenAddr+3], ram[screenAddr+4], ram[screenAddr+5],
           ram[screenAddr+6], ram[screenAddr+7]);
-      // Also show memScan
+      PlatformManager::getInstance().log(LOG_INFO, ATAG,
+          "Scr L1: %02X %02X %02X %02X %02X %02X %02X %02X",
+          ram[screenAddr+40], ram[screenAddr+41], ram[screenAddr+42],
+          ram[screenAddr+43], ram[screenAddr+44], ram[screenAddr+45],
+          ram[screenAddr+46], ram[screenAddr+47]);
+      PlatformManager::getInstance().log(LOG_INFO, ATAG,
+          "Scr L2: %02X %02X %02X %02X %02X %02X %02X %02X",
+          ram[screenAddr+80], ram[screenAddr+81], ram[screenAddr+82],
+          ram[screenAddr+83], ram[screenAddr+84], ram[screenAddr+85],
+          ram[screenAddr+86], ram[screenAddr+87]);
+      // Also show memScan and chactl
       PlatformManager::getInstance().log(LOG_INFO, ATAG,
           "memScan=%04X chactl=%02X", memScan, chactl);
     }
