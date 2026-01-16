@@ -49,14 +49,15 @@ static const struct {
     {1, 40, false},  // F: 320 pixels, 1 scanline, hires (GR.8)
 };
 
-ANTIC::ANTIC() : ram(nullptr), bitmap(nullptr), display(nullptr), gtia(nullptr) {
+ANTIC::ANTIC() : ram(nullptr), osRom(nullptr), bitmap(nullptr), display(nullptr), gtia(nullptr) {
   cntRefreshs = 0;
   reset();
 }
 
-void ANTIC::init(uint8_t *ram, GTIA *gtia) {
+void ANTIC::init(uint8_t *ram, const uint8_t *osRom, GTIA *gtia) {
   PlatformManager::getInstance().log(LOG_INFO, ATAG, "init() starting");
   this->ram = ram;
+  this->osRom = osRom;
   this->gtia = gtia;
 
   // Initialize palette (deferred from constructor to avoid FP during static init)
@@ -216,6 +217,18 @@ uint8_t ANTIC::fetchDisplayListByte() {
   return byte;
 }
 
+// Read byte from memory, using OS ROM for $C000-$FFFF range
+// This is used for character set access which needs ROM data
+inline uint8_t ANTIC::readMemWithROM(uint16_t addr) {
+  // OS ROM covers $C000-$FFFF when enabled
+  // Character set is typically at $E000 (chbase=$E0)
+  if (addr >= 0xC000 && osRom != nullptr) {
+    // Read from OS ROM (offset from $C000)
+    return osRom[addr - 0xC000];
+  }
+  return ram[addr];
+}
+
 void ANTIC::setModeLineParams(uint8_t mode) {
   uint8_t modeIdx = mode & 0x0F;
   scanLinesPerMode = modeParams[modeIdx].scanlines;
@@ -341,7 +354,8 @@ void ANTIC::drawCharacterMode2() {
     bool charInvert = (charCode & 0x80) != 0;
     charCode &= 0x7F;
 
-    uint8_t charData = ram[(charBase + charCode * 8 + charRow) & 0xFFFF];
+    // Read character data from ROM (character set at $E000 in OS ROM)
+    uint8_t charData = readMemWithROM((charBase + charCode * 8 + charRow) & 0xFFFF);
 
     // Apply inversion
     if (invert ^ charInvert) {
@@ -381,7 +395,8 @@ void ANTIC::drawCharacterMode4() {
   int xpos = 0;
   for (int col = 0; col < 40 && xpos < ATARI_WIDTH; col++) {
     uint8_t charCode = ram[(memScan + col) & 0xFFFF];
-    uint8_t charData = ram[(charBase + (charCode & 0x7F) * 8 + charRow) & 0xFFFF];
+    // Read character data from ROM
+    uint8_t charData = readMemWithROM((charBase + (charCode & 0x7F) * 8 + charRow) & 0xFFFF);
 
     // Color selection based on high bits of character code
     uint8_t colorPair = (charCode >> 6) & 0x03;
@@ -412,7 +427,8 @@ void ANTIC::drawCharacterMode6() {
   int xpos = 0;
   for (int col = 0; col < 20 && xpos < ATARI_WIDTH; col++) {
     uint8_t charCode = ram[(memScan + col) & 0xFFFF];
-    uint8_t charData = ram[(charBase + (charCode & 0x3F) * 8 + charRow) & 0xFFFF];
+    // Read character data from ROM
+    uint8_t charData = readMemWithROM((charBase + (charCode & 0x3F) * 8 + charRow) & 0xFFFF);
 
     // Color selection based on bits 6-7
     uint8_t colorSelect = (charCode >> 6) & 0x03;

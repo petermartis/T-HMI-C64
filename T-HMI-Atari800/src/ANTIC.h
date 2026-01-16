@@ -121,6 +121,7 @@ constexpr uint16_t VBLANK_START = 248;
 class ANTIC {
 private:
   uint8_t *ram;
+  const uint8_t *osRom;          // OS ROM for character set access
   uint16_t *bitmap;            // Output bitmap (ATARI_WIDTH x ATARI_HEIGHT)
   DisplayDriver *display;      // Display driver (ST7789V etc.)
   AtariPalette palette;        // Atari 256-color palette
@@ -180,6 +181,7 @@ private:
 
   void processDisplayList();
   uint8_t fetchDisplayListByte();
+  inline uint8_t readMemWithROM(uint16_t addr);  // Read with OS ROM support
   void setModeLineParams(uint8_t mode);
 
 public:
@@ -190,7 +192,7 @@ public:
   uint8_t dmaCycles;
 
   ANTIC();
-  void init(uint8_t *ram, GTIA *gtia);
+  void init(uint8_t *ram, const uint8_t *osRom, GTIA *gtia);
   void reset();
 
   // Register access

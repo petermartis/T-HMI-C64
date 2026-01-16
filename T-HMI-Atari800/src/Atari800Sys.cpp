@@ -73,7 +73,7 @@ void Atari800Sys::init(uint8_t *ram, const uint8_t *osRom, const uint8_t *basicR
   }
 
   // Initialize chips
-  antic.init(ram, &gtia);
+  antic.init(ram, osRom, &gtia);
   pokey.init();
   gtia.reset();
   pia.reset();
