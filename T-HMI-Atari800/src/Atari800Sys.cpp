@@ -153,24 +153,9 @@ uint8_t Atari800Sys::getMem(uint16_t addr) {
     if (basicRomEnabled && basicRom) {
       uint8_t val = basicRom[addr - 0xA000];
 
-      // WORKAROUND: Fix corrupted BASIC ROM vectors (build cache issue)
-      // If ROM has mixed vectors (INIT=$BFF0 from original, RUN=$0500 from Altirra),
-      // patch INIT to be $AA51 (correct Altirra BASIC init)
-      if (addr == 0xBFFE || addr == 0xBFFF) {
-        uint16_t initVec = basicRom[0x1FFE] | (basicRom[0x1FFF] << 8);
-        uint16_t runVec = basicRom[0x1FFC] | (basicRom[0x1FFD] << 8);
-        if (initVec == 0xBFF0 && runVec == 0x0500) {
-          // Mixed vectors - patch INIT to Altirra's $AA51
-          static bool patchLogged = false;
-          if (!patchLogged) {
-            static const char* TAG = "BASIC";
-            PlatformManager::getInstance().log(LOG_WARN, TAG, "Patching INIT vector $BFF0 -> $AA51");
-            patchLogged = true;
-          }
-          if (addr == 0xBFFE) return 0x51;  // INIT_LO
-          if (addr == 0xBFFF) return 0xAA;  // INIT_HI
-        }
-      }
+      // NOTE: Altirra BASIC uses 65C02/illegal opcodes that our 6502 emulator
+      // doesn't support. You MUST use original Atari BASIC ROM instead.
+      // Run: cd src/roms/original && python3 convert_roms.py ATARIXL.ROM ATARIBAS.ROM
 
       // Debug: log reads of cartridge vectors ($BFFA-$BFFF)
       static uint8_t cartVecReadCount = 0;
