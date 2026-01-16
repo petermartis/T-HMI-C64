@@ -201,6 +201,14 @@ void Atari800Sys::setMem(uint16_t addr, uint8_t val) {
 
   if (addr < 0xA000) {
     // Low RAM ($0000-$9FFF)
+    // Debug: trace writes to screen memory area (around $9C40)
+    static uint32_t screenWriteCount = 0;
+    if (addr >= 0x9C40 && addr < 0xA000 && screenWriteCount < 30) {
+      static const char* TAG = "SCREEN";
+      PlatformManager::getInstance().log(LOG_INFO, TAG, "Write screen $%04X = $%02X '%c'",
+          addr, val, (val >= 0x20 && val < 0x7F) ? (val) : '.');
+      screenWriteCount++;
+    }
     ram[addr] = val;
     return;
   }
