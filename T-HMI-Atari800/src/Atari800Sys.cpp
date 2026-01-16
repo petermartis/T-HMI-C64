@@ -120,9 +120,17 @@ void Atari800Sys::reset() {
 
 void Atari800Sys::updateBanking() {
   uint8_t portb = pia.getPortB();
+  bool wasOsEnabled = osRomEnabled;
   osRomEnabled = (portb & PORTB_OS_ROM) == 0;
   basicRomEnabled = (portb & PORTB_BASIC) == 0;
   selfTestEnabled = (portb & PORTB_SELFTEST) == 0;
+
+  // Debug: log when OS ROM enable changes
+  if (wasOsEnabled != osRomEnabled) {
+    static const char* TAG = "BANK";
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "PORTB=%02X osRom=%d->%d basic=%d self=%d",
+        portb, wasOsEnabled, osRomEnabled, basicRomEnabled, selfTestEnabled);
+  }
 }
 
 uint8_t Atari800Sys::getMem(uint16_t addr) {
@@ -312,7 +320,8 @@ bool Atari800Sys::handleIRQ() {
 
 void Atari800Sys::cmd6502brk() {
   // BRK instruction - software interrupt
-  pc++;  // Skip padding byte
+  uint16_t brkPC = pc - 1;  // PC already incremented when we fetched the opcode
+  pc++;  // Skip padding byte (BRK pushes PC+2)
 
   pushtostack(pc >> 8);
   pushtostack(pc & 0xFF);
@@ -326,7 +335,15 @@ void Atari800Sys::cmd6502brk() {
   if (cflag) status |= 0x01;
   pushtostack(status);
 
-  pc = getMem(0xFFFE) | (getMem(0xFFFF) << 8);
+  uint8_t vecLo = getMem(0xFFFE);
+  uint8_t vecHi = getMem(0xFFFF);
+  pc = vecLo | (vecHi << 8);
+
+  // Debug: Log BRK vector read
+  static const char* TAG = "BRK";
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "BRK at $%04X -> vec=$%02X%02X osRom=%d portb=%02X",
+      brkPC, vecHi, vecLo, osRomEnabled, pia.getPortB());
+
   iflag = true;
   numofcycles = 7;
 }
