@@ -510,27 +510,31 @@ void Atari800Sys::run() {
         basicExecCount++;
       }
 
-      // Debug: Trace JMP/JSR to BASIC area
-      static uint8_t jmpToBasicCount = 0;
-      if (jmpToBasicCount < 20) {
+      // Debug: Trace JMP/JSR to BASIC area and cartridge-related jumps
+      static uint8_t jmpTraceCount = 0;
+      if (jmpTraceCount < 30) {
         // JMP absolute ($4C), JSR ($20)
-        if ((opcode == 0x4C || opcode == 0x20) && instrPC < 0xA000) {
+        if ((opcode == 0x4C || opcode == 0x20) && instrPC >= 0xC000) {
           uint16_t target = getMem(instrPC + 1) | (getMem(instrPC + 2) << 8);
+          // Trace jumps to BASIC area or low RAM (possible cartridge trampoline)
           if (target >= 0xA000 && target < 0xC000) {
             PlatformManager::getInstance().log(LOG_INFO, TAG, "%s to BASIC: PC=$%04X -> $%04X",
                 opcode == 0x4C ? "JMP" : "JSR", instrPC, target);
-            jmpToBasicCount++;
+            jmpTraceCount++;
+          } else if (target < 0x0800) {
+            // Low RAM jump - might be cartridge RUN trampoline
+            PlatformManager::getInstance().log(LOG_INFO, TAG, "%s to low RAM: PC=$%04X -> $%04X",
+                opcode == 0x4C ? "JMP" : "JSR", instrPC, target);
+            jmpTraceCount++;
           }
         }
-        // JMP indirect ($6C)
-        if (opcode == 0x6C && instrPC < 0xA000) {
+        // JMP indirect ($6C) - commonly used for cartridge/BASIC start
+        if (opcode == 0x6C && instrPC >= 0xC000) {
           uint16_t ptr = getMem(instrPC + 1) | (getMem(instrPC + 2) << 8);
           uint16_t target = getMem(ptr) | (getMem(ptr + 1) << 8);
-          if (target >= 0xA000 && target < 0xC000) {
-            PlatformManager::getInstance().log(LOG_INFO, TAG, "JMP ($%04X) to BASIC: PC=$%04X -> $%04X",
-                ptr, instrPC, target);
-            jmpToBasicCount++;
-          }
+          PlatformManager::getInstance().log(LOG_INFO, TAG, "JMP ($%04X)=$%04X from OS: PC=$%04X",
+              ptr, target, instrPC);
+          jmpTraceCount++;
         }
       }
 
