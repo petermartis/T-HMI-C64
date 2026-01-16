@@ -174,6 +174,23 @@ void Atari800Sys::setMem(uint16_t addr, uint8_t val) {
   // RAM always writable in all regions
   // The OS can write to RAM under ROM at any time
 
+  // Debug: Log writes to ROM-shadowed area
+  static uint32_t writeCount = 0;
+  if (addr >= 0xC000 && addr < 0xD000) {
+    if (writeCount < 50) {
+      static const char* TAG = "WMEM";
+      PlatformManager::getInstance().log(LOG_INFO, TAG, "Write $%04X = $%02X (C-region)", addr, val);
+      writeCount++;
+    }
+  }
+  if (addr >= 0xD800) {
+    if (writeCount < 50) {
+      static const char* TAG = "WMEM";
+      PlatformManager::getInstance().log(LOG_INFO, TAG, "Write $%04X = $%02X (D8-region)", addr, val);
+      writeCount++;
+    }
+  }
+
   if (addr < 0xA000) {
     // Low RAM ($0000-$9FFF)
     ram[addr] = val;
