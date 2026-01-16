@@ -478,6 +478,14 @@ void Atari800Sys::run() {
         cioCallCount++;
       }
 
+      // Debug: Trace execution in BASIC ROM range - does BASIC code actually run?
+      static uint8_t basicExecCount = 0;
+      if (instrPC >= 0xA000 && instrPC < 0xC000 && basicExecCount < 30) {
+        PlatformManager::getInstance().log(LOG_INFO, TAG, "BASIC exec: PC=$%04X op=$%02X A=%02X X=%02X Y=%02X",
+            instrPC, opcode, a, x, y);
+        basicExecCount++;
+      }
+
       // Track PC before execution
       static uint16_t prevPC = 0;
       static uint8_t prevOp = 0;
