@@ -35,9 +35,17 @@ private:
   uint16_t atariColors[256];
   bool initialized;
 
-  void generatePalette() {
-    // Generate Atari NTSC palette
+  void generatePalette(bool isPAL = true) {
+    // Generate Atari PAL or NTSC palette
     // Color format: HHHHLLLL where H=hue (0-15), L=luminance (0-15)
+    //
+    // PAL:  Phase offset ~+30 degrees, more saturated colors
+    // NTSC: Phase offset ~-58 degrees, slightly desaturated
+
+    // Phase offset and saturation depend on system type
+    float phaseOffset = isPAL ? 30.0f : -58.0f;
+    float saturation = isPAL ? 0.38f : 0.32f;
+
     for (int color = 0; color < 256; color++) {
       int hue = (color >> 4) & 0x0F;
       int lum = color & 0x0F;
@@ -50,30 +58,11 @@ private:
         // Grayscale
         r = g = b = y;
       } else {
-        // NTSC color phase angles (approximate)
-        static const float hueAngles[16] = {
-            0.0f,    // 0: Gray (special case)
-            0.0f,    // 1: Gold/Orange
-            30.0f,   // 2: Orange
-            60.0f,   // 3: Red-Orange
-            90.0f,   // 4: Pink/Red
-            120.0f,  // 5: Purple
-            150.0f,  // 6: Purple-Blue
-            180.0f,  // 7: Blue
-            210.0f,  // 8: Blue
-            240.0f,  // 9: Light Blue
-            270.0f,  // 10: Turquoise
-            300.0f,  // 11: Green-Blue
-            330.0f,  // 12: Green
-            350.0f,  // 13: Yellow-Green
-            360.0f,  // 14: Orange-Green
-            380.0f   // 15: Light Orange
-        };
+        // Atari color phase calculation
+        // ~25.7 degrees per hue step (360/14 for 14 active hues)
+        float angle = ((hue - 1) * 25.7f + phaseOffset) * 3.14159f / 180.0f;
 
-        float angle = hueAngles[hue] * 3.14159f / 180.0f;
-        float saturation = 0.5f;
-
-        // YIQ to RGB conversion (simplified)
+        // YIQ to RGB conversion
         float i = saturation * cosf(angle);
         float q = saturation * sinf(angle);
 

@@ -651,6 +651,10 @@ void ANTIC::refresh() {
       PlatformManager::getInstance().log(LOG_INFO, ATAG,
           "dmactl=%02X dlist=%04X chbase=%02X bg=%02X",
           dmactl, dlist, chbase, gtia->getBackgroundColor());
+      PlatformManager::getInstance().log(LOG_INFO, ATAG,
+          "COLPF0=%02X COLPF1=%02X COLPF2=%02X COLPF3=%02X",
+          gtia->getPlayfieldColor(0), gtia->getPlayfieldColor(1),
+          gtia->getPlayfieldColor(2), gtia->getPlayfieldColor(3));
     }
   }
   cntRefreshs++;
