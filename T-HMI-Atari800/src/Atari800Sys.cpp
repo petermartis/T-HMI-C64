@@ -171,28 +171,35 @@ uint8_t Atari800Sys::getMem(uint16_t addr) {
 }
 
 void Atari800Sys::setMem(uint16_t addr, uint8_t val) {
-  // RAM always writable (except for ROM-shadowed areas)
+  // RAM always writable in all regions
+  // The OS can write to RAM under ROM at any time
+
   if (addr < 0xA000) {
+    // Low RAM ($0000-$9FFF)
     ram[addr] = val;
     return;
   }
 
-  // BASIC ROM area - write to RAM
   if (addr < 0xC000) {
+    // BASIC ROM area ($A000-$BFFF) - write to underlying RAM
     ram[addr] = val;
     return;
   }
 
-  // Hardware I/O area ($D000-$D7FF)
-  if (addr >= 0xD000 && addr < 0xD800) {
+  if (addr < 0xD000) {
+    // OS ROM area ($C000-$CFFF) - write to underlying RAM
+    ram[addr] = val;
+    return;
+  }
+
+  if (addr < 0xD800) {
+    // Hardware I/O area ($D000-$D7FF)
     writeIO(addr, val);
     return;
   }
 
-  // OS ROM area - write to underlying RAM (if accessible)
-  if (addr >= 0xD800) {
-    ram[addr] = val;
-  }
+  // OS ROM area ($D800-$FFFF) - write to underlying RAM
+  ram[addr] = val;
 }
 
 uint8_t Atari800Sys::readIO(uint16_t addr) {
