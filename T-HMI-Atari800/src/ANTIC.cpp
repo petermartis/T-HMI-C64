@@ -288,7 +288,9 @@ void ANTIC::processDisplayList() {
 }
 
 // First scanline of visible area in bitmap
-static constexpr int FIRST_VISIBLE_SCANLINE = 8;
+// Standard Atari display: ~24 blank scanlines before text area
+// Increasing this value shifts the captured area down (shows earlier scanlines)
+static constexpr int FIRST_VISIBLE_SCANLINE = 32;
 
 void ANTIC::drawBlankLine() {
   // Only draw to bitmap if within visible area

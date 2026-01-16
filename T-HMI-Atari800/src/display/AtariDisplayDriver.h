@@ -36,39 +36,58 @@ private:
   bool initialized;
 
   void generatePalette(bool isPAL = true) {
-    // Generate Atari PAL or NTSC palette
+    // Generate Atari PAL or NTSC palette using HSL color model
     // Color format: HHHHLLLL where H=hue (0-15), L=luminance (0-15)
     //
-    // PAL:  Phase offset ~+30 degrees, more saturated colors
-    // NTSC: Phase offset ~-58 degrees, slightly desaturated
-
-    // Phase offset and saturation depend on system type
-    float phaseOffset = isPAL ? 30.0f : -58.0f;
-    float saturation = isPAL ? 0.38f : 0.32f;
+    // The Atari color wheel maps hues as follows:
+    // 0=gray, 1-2=orange/gold, 3-4=red, 5-6=pink/magenta, 7-8=purple/violet,
+    // 9-10=blue, 11-12=cyan/turquoise, 13-14=green, 15=yellow-green
 
     for (int color = 0; color < 256; color++) {
       int hue = (color >> 4) & 0x0F;
       int lum = color & 0x0F;
 
-      // Convert to RGB
-      float y = lum / 15.0f;  // Luminance 0-1
       float r, g, b;
+      float lightness = lum / 15.0f;
 
       if (hue == 0) {
         // Grayscale
-        r = g = b = y;
+        r = g = b = lightness;
       } else {
-        // Atari color phase calculation
-        // ~25.7 degrees per hue step (360/14 for 14 active hues)
-        float angle = ((hue - 1) * 25.7f + phaseOffset) * 3.14159f / 180.0f;
+        // Map Atari hue (1-15) to HSL hue angle (0-360)
+        // Atari hue 1 = orange (~30°), going through spectrum
+        // Hue 9 should be blue (~240°)
+        // Formula: starting at orange (30°), each step adds ~24° (360/15)
+        float hslHue;
+        if (isPAL) {
+          // PAL: Hue 9 = blue, so we need offset to make that happen
+          // (9-1) * 24 + offset = 240 => 192 + offset = 240 => offset = 48
+          hslHue = (hue - 1) * 24.0f + 48.0f;
+        } else {
+          // NTSC: slightly different color wheel
+          hslHue = (hue - 1) * 24.0f + 30.0f;
+        }
+        if (hslHue >= 360.0f) hslHue -= 360.0f;
 
-        // YIQ to RGB conversion
-        float i = saturation * cosf(angle);
-        float q = saturation * sinf(angle);
+        // HSL to RGB conversion
+        float h = hslHue / 360.0f;
+        float s = 0.7f;  // Saturation
+        float l = 0.15f + lightness * 0.7f;  // Map luminance 0-15 to 0.15-0.85
 
-        r = y + 0.956f * i + 0.621f * q;
-        g = y - 0.272f * i - 0.647f * q;
-        b = y - 1.105f * i + 1.702f * q;
+        float c = (1.0f - fabsf(2.0f * l - 1.0f)) * s;
+        float x = c * (1.0f - fabsf(fmodf(h * 6.0f, 2.0f) - 1.0f));
+        float m = l - c / 2.0f;
+
+        int hueSegment = (int)(h * 6.0f) % 6;
+        switch (hueSegment) {
+          case 0: r = c; g = x; b = 0; break;
+          case 1: r = x; g = c; b = 0; break;
+          case 2: r = 0; g = c; b = x; break;
+          case 3: r = 0; g = x; b = c; break;
+          case 4: r = x; g = 0; b = c; break;
+          default: r = c; g = 0; b = x; break;
+        }
+        r += m; g += m; b += m;
 
         // Clamp values
         if (r < 0.0f) r = 0.0f; if (r > 1.0f) r = 1.0f;
