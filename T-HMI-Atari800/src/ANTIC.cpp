@@ -673,6 +673,21 @@ void ANTIC::refresh() {
           "COLPF0=%02X COLPF1=%02X COLPF2=%02X COLPF3=%02X",
           gtia->getPlayfieldColor(0), gtia->getPlayfieldColor(1),
           gtia->getPlayfieldColor(2), gtia->getPlayfieldColor(3));
+      // Dump display list and screen memory
+      PlatformManager::getInstance().log(LOG_INFO, ATAG,
+          "DL: %02X %02X %02X %02X %02X %02X %02X %02X",
+          ram[dlist], ram[dlist+1], ram[dlist+2], ram[dlist+3],
+          ram[dlist+4], ram[dlist+5], ram[dlist+6], ram[dlist+7]);
+      // Get screen address from LMS instruction (typically at dlist+3)
+      uint16_t screenAddr = ram[dlist+4] | (ram[dlist+5] << 8);
+      PlatformManager::getInstance().log(LOG_INFO, ATAG,
+          "Screen@%04X: %02X %02X %02X %02X %02X %02X %02X %02X",
+          screenAddr, ram[screenAddr], ram[screenAddr+1], ram[screenAddr+2],
+          ram[screenAddr+3], ram[screenAddr+4], ram[screenAddr+5],
+          ram[screenAddr+6], ram[screenAddr+7]);
+      // Also show memScan
+      PlatformManager::getInstance().log(LOG_INFO, ATAG,
+          "memScan=%04X chactl=%02X", memScan, chactl);
     }
   }
   cntRefreshs++;
