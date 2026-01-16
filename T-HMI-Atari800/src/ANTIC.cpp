@@ -314,8 +314,9 @@ void ANTIC::drawCharacterMode2() {
   }
 
   const uint16_t *colors = palette.getAtariColors();
-  uint8_t bgColor = gtia->getBackgroundColor();
-  uint8_t fgColor = gtia->getPlayfieldColor(0) | (gtia->getPlayfieldColor(0) & 0x0F);
+  // Mode 2 uses COLPF2 for background, COLPF1 luminance + COLPF2 hue for foreground
+  uint8_t bgColor = gtia->getPlayfieldColor(2);  // COLPF2
+  uint8_t fgColor = (gtia->getPlayfieldColor(2) & 0xF0) | (gtia->getPlayfieldColor(1) & 0x0F);
 
   uint16_t bgRGB = colors[bgColor];
   uint16_t fgRGB = colors[fgColor];
