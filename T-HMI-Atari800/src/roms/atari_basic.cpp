@@ -26,12 +26,8 @@
 #include "original/original_basic.h"
 
 const uint8_t* getAtariBasicRom() {
-    // DEBUG: Force Altirra BASIC to test if emulation works
-    // TODO: Remove this after debugging
-#define FORCE_ALTIRRA_BASIC 1
-#if FORCE_ALTIRRA_BASIC
-    return altirra_basic;
-#elif HAVE_ORIGINAL_BASIC_ROM
+    // Use original BASIC ROM if available, otherwise fall back to Altirra
+#if HAVE_ORIGINAL_BASIC_ROM
     // Use original Atari BASIC ROM when available
     return original_basic;
 #else
