@@ -121,6 +121,14 @@ void Atari800Emu::setup() {
   PlatformManager::getInstance().log(LOG_INFO, TAG, "OS ROM at %p", (void*)osRom);
   const uint8_t* basicRom = getAtariBasicRom();
   PlatformManager::getInstance().log(LOG_INFO, TAG, "BASIC ROM at %p", (void*)basicRom);
+
+  // Debug: Dump BASIC ROM cartridge vectors
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "BASIC ROM vectors:");
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "  $BFFA (FLAGS): $%02X", basicRom[0x1FFA]);
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "  $BFFB (RESERVED): $%02X", basicRom[0x1FFB]);
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "  $BFFC-D (RUN): $%02X%02X", basicRom[0x1FFD], basicRom[0x1FFC]);
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "  $BFFE-F (INIT): $%02X%02X", basicRom[0x1FFF], basicRom[0x1FFE]);
+
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Calling sys.init()...");
   sys.init(ram, osRom, basicRom);
   PlatformManager::getInstance().log(LOG_INFO, TAG, "System initialized, PC=%04X", sys.getPC());
