@@ -113,9 +113,24 @@ void PIA::write(uint8_t addr, uint8_t val) {
     if (pbctl & PIA_DDR) {
       // Write data register
       // Only bits set as outputs in ddrb can be written
+      uint8_t oldPortb = portb;
       portb = (val & ddrb) | (portb & ~ddrb);
+      // Debug: log PORTB changes that affect BASIC enable (bit 1)
+      static uint8_t portbWriteCount = 0;
+      if (portbWriteCount < 20) {
+        logPIA("PORTB write", val);
+        PlatformManager::getInstance().log(LOG_INFO, "PIA",
+            "  ddrb=$%02X old=$%02X new=$%02X BASIC=%s",
+            ddrb, oldPortb, portb, (portb & 0x02) ? "OFF" : "ON");
+        portbWriteCount++;
+      }
     } else {
       // Write DDR
+      static uint8_t ddrbWriteCount = 0;
+      if (ddrbWriteCount < 10) {
+        logPIA("PORTB DDR write", val);
+        ddrbWriteCount++;
+      }
       ddrb = val;
     }
     break;
