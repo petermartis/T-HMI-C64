@@ -123,11 +123,29 @@ void Atari800Emu::setup() {
   PlatformManager::getInstance().log(LOG_INFO, TAG, "BASIC ROM at %p", (void*)basicRom);
 
   // Debug: Dump BASIC ROM cartridge vectors
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "BASIC ROM vectors:");
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "  $BFFA (FLAGS): $%02X", basicRom[0x1FFA]);
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "  $BFFB (RESERVED): $%02X", basicRom[0x1FFB]);
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "  $BFFC-D (RUN): $%02X%02X", basicRom[0x1FFD], basicRom[0x1FFC]);
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "  $BFFE-F (INIT): $%02X%02X", basicRom[0x1FFF], basicRom[0x1FFE]);
+  uint16_t initVec = basicRom[0x1FFE] | (basicRom[0x1FFF] << 8);
+  uint16_t runVec = basicRom[0x1FFC] | (basicRom[0x1FFD] << 8);
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "BASIC ROM vectors: INIT=$%04X RUN=$%04X", initVec, runVec);
+
+  // Verify BASIC ROM vectors are correct for Altirra BASIC
+  // Altirra BASIC: INIT=$AA51, RUN=$0500
+  // Original BASIC: INIT=$BFF0, RUN=$A000
+  bool needsPatch = false;
+  if (initVec == 0xBFF0 && runVec == 0x0500) {
+    // Mixed vectors - Altirra RUN with Original INIT - this is broken!
+    PlatformManager::getInstance().log(LOG_ERROR, TAG, "BASIC ROM has corrupted vectors!");
+    PlatformManager::getInstance().log(LOG_ERROR, TAG, "Expected Altirra: INIT=$AA51, RUN=$0500");
+    PlatformManager::getInstance().log(LOG_ERROR, TAG, "Or Original: INIT=$BFF0, RUN=$A000");
+    PlatformManager::getInstance().log(LOG_ERROR, TAG, "Got mixed: INIT=$BFF0, RUN=$0500 - BUILD CACHE ISSUE!");
+    PlatformManager::getInstance().log(LOG_WARN, TAG, "Patching to use Altirra BASIC vectors...");
+    needsPatch = true;
+  } else if (initVec == 0xAA51 && runVec == 0x0500) {
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "BASIC ROM: Altirra BASIC detected");
+  } else if (initVec == 0xBFF0 && runVec == 0xA000) {
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "BASIC ROM: Original Atari BASIC detected");
+  } else {
+    PlatformManager::getInstance().log(LOG_WARN, TAG, "BASIC ROM: Unknown BASIC variant");
+  }
 
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Calling sys.init()...");
   sys.init(ram, osRom, basicRom);
