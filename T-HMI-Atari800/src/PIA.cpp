@@ -15,6 +15,13 @@
  http://www.gnu.org/licenses/.
 */
 #include "PIA.h"
+#include "platform/PlatformManager.h"
+
+// Helper for debug logging
+void logPIA(const char* msg, uint8_t val) {
+  static const char* TAG = "PIA";
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "%s: $%02X", msg, val);
+}
 
 PIA::PIA() { reset(); }
 
@@ -28,7 +35,8 @@ void PIA::reset() {
   // Bit 1 = 0: BASIC ROM enabled ($A000-$BFFF)
   // Bit 7 = 1: Self-test ROM disabled
   // Other bits = 1: default state
-  portb = 0x7C;  // OS enabled, BASIC enabled, self-test disabled
+  // 0xFC = 1111 1100 (bit 0=0, bit 1=0, bit 7=1)
+  portb = 0xFC;  // OS enabled, BASIC enabled, self-test disabled
   ddrb = 0x00;
   pbctl = 0x00;
 
@@ -57,9 +65,22 @@ uint8_t PIA::read(uint8_t addr) {
   case PORTB:
     if (pbctl & PIA_DDR) {
       // Read data register
+      static uint8_t portbReadCount = 0;
+      if (portbReadCount < 10) {
+        // Debug log
+        extern void logPIA(const char* msg, uint8_t val);
+        logPIA("PORTB read (data)", portb);
+        portbReadCount++;
+      }
       return portb;
     } else {
       // Read DDR
+      static uint8_t ddrbReadCount = 0;
+      if (ddrbReadCount < 10) {
+        extern void logPIA(const char* msg, uint8_t val);
+        logPIA("PORTB read (DDR)", ddrb);
+        ddrbReadCount++;
+      }
       return ddrb;
     }
 

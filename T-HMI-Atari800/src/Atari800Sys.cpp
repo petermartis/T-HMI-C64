@@ -146,6 +146,14 @@ uint8_t Atari800Sys::getMem(uint16_t addr) {
   // BASIC ROM area ($A000-$BFFF)
   if (addr < 0xC000) {
     if (basicRomEnabled && basicRom) {
+      // Debug: log first few BASIC ROM accesses
+      static uint32_t basicAccessCount = 0;
+      if (basicAccessCount < 20) {
+        static const char* TAG = "BASIC";
+        PlatformManager::getInstance().log(LOG_INFO, TAG, "Read BASIC ROM $%04X = $%02X",
+            addr, basicRom[addr - 0xA000]);
+        basicAccessCount++;
+      }
       return basicRom[addr - 0xA000];
     }
     return ram[addr];
