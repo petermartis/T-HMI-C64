@@ -14,32 +14,37 @@
  For the complete text of the GNU General Public License see
  http://www.gnu.org/licenses/.
 
- Atari XL OS ROM - Using Altirra OS
- ==================================
- This file uses the Altirra XL OS ROM which is a legal, freely-distributable
- replacement for the original Atari XL OS ROM.
+ Atari XL OS ROM
+ ===============
+ This file supports both original Atari ROMs and Altirra replacements.
 
+ To use original Atari ROMs:
+ 1. Place ATARIXL.ROM in src/roms/original/
+ 2. Run: python3 convert_roms.py ATARIXL.ROM
+ 3. Rebuild the project
+
+ Altirra OS is used as fallback when original ROMs are not available.
  Altirra - Atari 800/800XL emulator
  Kernel ROM replacement, version 3.11
  Copyright (C) 2008-2018 Avery Lee
-
- The Altirra OS is released under a permissive license:
- "Copying and distribution of this file, with or without modification,
- are permitted in any medium without royalty provided the copyright
- notice and this notice are preserved. This file is offered as-is,
- without any warranty."
 
  OS ROM resides at $C000-$FFFF (16KB)
 */
 #include "atarixl_os.h"
 #include "altirraos_xl.h"
+#include "original/original_os_xl.h"
 
 // Placeholder for backward compatibility (zero-initialized)
 alignas(4) const uint8_t atarixl_os_rom[ATARIXL_OS_SIZE] = {0};
 
 const uint8_t* getAtariOSRom() {
-    // Return the Altirra XL OS ROM directly
+#if HAVE_ORIGINAL_OS_ROM
+    // Use original Atari OS ROM when available
+    return original_os_xl;
+#else
+    // Fall back to Altirra XL OS ROM
     return altirra_os_xl;
+#endif
 }
 
 // Display list for boot screen (not needed with real OS - OS creates its own)
