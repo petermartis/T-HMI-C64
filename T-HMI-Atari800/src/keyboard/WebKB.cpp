@@ -516,14 +516,23 @@ void WebKB::init() {
   // create webserver instance
   server = new AsyncWebServer(port);
 
-  // event callback to start the web service
+  // Event callbacks for WiFi events - server starts only after network is ready
   WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
-    if (event == ARDUINO_EVENT_WIFI_STA_GOT_IP) {
-      PlatformManager::getInstance().log(LOG_INFO, TAG,
-                                         "Wifi connected. IP address: %s",
-                                         WiFi.localIP().toString());
-      startOneShotTimer([this]() { this->printIPAddress(); }, 4000);
-      startWebServer();
+    switch (event) {
+      case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+        PlatformManager::getInstance().log(LOG_INFO, TAG,
+                                           "Wifi connected. IP address: %s",
+                                           WiFi.localIP().toString());
+        startOneShotTimer([this]() { this->printIPAddress(); }, 4000);
+        startWebServer();
+        break;
+      case ARDUINO_EVENT_WIFI_AP_START:
+        PlatformManager::getInstance().log(LOG_INFO, TAG,
+                                           "AP started, starting captive portal server...");
+        startCaptivePortalServer();
+        break;
+      default:
+        break;
     }
   });
 
@@ -565,21 +574,19 @@ String WebKB::getNetworksHTML() {
   return options;
 }
 
-// setup an access point and redirect to the captive portal
+// setup an access point - server will be started via AP_START event
 void WebKB::startCaptivePortal() {
-
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting WiFi AP...");
   WiFi.mode(WIFI_AP);
   WiFi.softAP(AP_SSID, AP_PASSWORD);
+  // Server will be started in startCaptivePortalServer() via WIFI_AP_START event
+}
 
-  // Wait for AP to be fully started before using network stack
-  delay(500);
-
+// Called from WiFi AP_START event - starts the captive portal server
+void WebKB::startCaptivePortalServer() {
   PlatformManager::getInstance().log(LOG_INFO, TAG,
                                      "Wifi access point ip adress: %s",
                                      WiFi.softAPIP().toString());
-
-  // Additional delay to ensure TCP/IP stack is ready
-  delay(100);
 
   dns_server.start(53, "*", WiFi.softAPIP());
 
@@ -614,6 +621,7 @@ void WebKB::startCaptivePortal() {
   });
 
   server->begin();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Captive portal server started");
 }
 
 void WebKB::connectToWiFi(const String &ssid, const String &pass) {

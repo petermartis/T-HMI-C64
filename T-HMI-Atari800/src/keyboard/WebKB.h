@@ -87,6 +87,7 @@ private:
   void printIPAddress();
   String getNetworksHTML();
   void startCaptivePortal();
+  void startCaptivePortalServer();
   void connectToWiFi(const String &ssid, const String &pass);
 
   void setKBcodes(uint8_t sentdc01, uint8_t sentdc00) {
