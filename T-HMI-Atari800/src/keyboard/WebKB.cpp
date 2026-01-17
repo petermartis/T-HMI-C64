@@ -516,23 +516,22 @@ void WebKB::init() {
   // create webserver instance
   server = new AsyncWebServer(port);
 
-  // Event callbacks for WiFi events - server starts only after network is ready
-  // Use deferred timers to ensure server starts in the correct task context
+  // Event callbacks for WiFi events - set flags to defer server start
+  // Server will be started from scanKeyboard() which runs in the main task context
   WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
     switch (event) {
       case ARDUINO_EVENT_WIFI_STA_GOT_IP:
         PlatformManager::getInstance().log(LOG_INFO, TAG,
                                            "Wifi connected. IP address: %s",
                                            WiFi.localIP().toString());
-        startOneShotTimer([this]() { this->printIPAddress(); }, 4000);
-        // Defer server start to timer task context
-        startOneShotTimer([this]() { this->startWebServer(); }, 100);
+        // Set flag to start web server from main task context
+        pendingWebServerStart.store(true);
         break;
       case ARDUINO_EVENT_WIFI_AP_START:
         PlatformManager::getInstance().log(LOG_INFO, TAG,
                                            "AP started, will start captive portal server...");
-        // Defer server start to timer task context for proper TCPIP locking
-        startOneShotTimer([this]() { this->startCaptivePortalServer(); }, 100);
+        // Set flag to start captive portal from main task context
+        pendingCaptivePortalStart.store(true);
         break;
       default:
         break;
@@ -1039,6 +1038,20 @@ void WebKB::processSingleKey(const char *type, const char *keyId, bool shift,
 }
 
 void WebKB::scanKeyboard() {
+
+  // Check for deferred server start (must run from main task context for TCPIP core access)
+  if (!serverStarted) {
+    if (pendingCaptivePortalStart.load()) {
+      pendingCaptivePortalStart.store(false);
+      startCaptivePortalServer();
+      serverStarted = true;
+    } else if (pendingWebServerStart.load()) {
+      pendingWebServerStart.store(false);
+      printIPAddress();
+      startWebServer();
+      serverStarted = true;
+    }
+  }
 
   // countdown
   if (currentKey.active && currentKey.holdTicks > 0) {

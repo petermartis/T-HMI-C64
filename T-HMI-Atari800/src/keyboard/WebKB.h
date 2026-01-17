@@ -113,6 +113,11 @@ private:
   uint8_t extCmdBuffer[1024];
   bool shiftlock = false;
   String lastUploadedFile;  // For file upload handling
+
+  // Deferred server start flags (set by WiFi events, checked in scanKeyboard)
+  std::atomic<bool> pendingCaptivePortalStart{false};
+  std::atomic<bool> pendingWebServerStart{false};
+  bool serverStarted{false};
   std::queue<CodeTriple> eventQueue;
   SemaphoreHandle_t queueSem;
   ActiveKey currentKey;
