@@ -29,6 +29,7 @@
 #include <WiFi.h>
 #include <cctype>
 #include <set>
+#include <lwip/tcpip.h>  // For LOCK_TCPIP_CORE
 
 // html/css/javascript web keyboard
 #include "htmlcode.h"
@@ -606,7 +607,10 @@ void WebKB::startCaptivePortal() {
     startOneShotTimer([]() { ESP.restart(); }, 2000);
   });
 
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Locking TCPIP core for server->begin()...");
+  LOCK_TCPIP_CORE();
   server->begin();
+  UNLOCK_TCPIP_CORE();
   serverStarted = true;
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Captive portal server started");
 }
@@ -800,7 +804,10 @@ void WebKB::startWebServer() {
     request->send(200, "application/json", "{\"status\":\"ok\"}");
   });
 
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Locking TCPIP core for server->begin()...");
+  LOCK_TCPIP_CORE();
   server->begin();
+  UNLOCK_TCPIP_CORE();
 
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Webserver started.");
 }
