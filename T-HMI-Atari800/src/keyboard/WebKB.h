@@ -78,7 +78,7 @@ public:
 
   void scanKeyboard() override;
   void setDetectReleasekey(bool detectreleasekey) override {}
-  void processDeferredOperations() override;
+  bool processDeferredOperations() override;
 
 private:
   void startWebServer();

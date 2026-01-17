@@ -111,8 +111,10 @@ public:
    *
    * Called from the main loop to handle operations (like starting web servers)
    * that require proper TCPIP core access and cannot run from timer callbacks.
+   *
+   * @return true if deferred operations are complete (e.g., server started)
    */
-  virtual void processDeferredOperations() {}
+  virtual bool processDeferredOperations() { return true; }
 
   /**
    * @brief Retrieves the current Atari key code for POKEY.

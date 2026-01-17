@@ -98,12 +98,17 @@ void setup() {
  *
  * This handles WiFi/network operations that require proper TCPIP core access.
  * The main emulation runs on core 0, but network operations must run here.
+ * AsyncWebServer handles requests asynchronously so this loop is mostly idle.
  */
+static bool wifiServerStarted = false;
+
 void loop() {
   // Process deferred WiFi operations from the correct task context
-  if (atari800Emu.sys.keyboard) {
-    atari800Emu.sys.keyboard->processDeferredOperations();
+  if (!wifiServerStarted && atari800Emu.sys.keyboard) {
+    wifiServerStarted = atari800Emu.sys.keyboard->processDeferredOperations();
   }
 
-  vTaskDelay(pdMS_TO_TICKS(10));  // Check every 10ms
+  // Once server is started, this loop is mostly idle
+  // AsyncWebServer handles HTTP requests in background automatically
+  vTaskDelay(pdMS_TO_TICKS(wifiServerStarted ? 100 : 10));
 }
