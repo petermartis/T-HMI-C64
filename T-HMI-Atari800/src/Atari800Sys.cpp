@@ -165,7 +165,7 @@ uint8_t Atari800Sys::getMem(uint16_t addr) {
                 "Patching RUN vector: $%02X00 -> $A000", runHi);
             patchLogged = true;
           }
-          return 0xA0;  // Return correct RUN_HI for BASIC cold start
+          val = 0xA0;  // Patch RUN_HI for BASIC cold start
         }
       }
 
@@ -182,7 +182,8 @@ uint8_t Atari800Sys::getMem(uint16_t addr) {
           case 0xBFFE: vecName = "INIT_LO"; break;
           case 0xBFFF: vecName = "INIT_HI"; break;
         }
-        PlatformManager::getInstance().log(LOG_INFO, TAG, "Read $%04X (%s) = $%02X", addr, vecName, val);
+        PlatformManager::getInstance().log(LOG_INFO, TAG, "Read $%04X (%s) = $%02X from PC=$%04X",
+            addr, vecName, val, pc);
         cartVecReadCount++;
       }
       return val;
@@ -240,12 +241,20 @@ void Atari800Sys::setMem(uint16_t addr, uint8_t val) {
   if (addr < 0xA000) {
     // Low RAM ($0000-$9FFF)
 
-    // Debug: trace writes to DOSVEC ($000A-$000B) - DOS/cartridge run vector
-    static uint8_t dosvecWriteCount = 0;
-    if ((addr == 0x000A || addr == 0x000B) && dosvecWriteCount < 20) {
+    // Debug: trace writes to DOSVEC ($000A-$000B) and DOSINI ($000C-$000D)
+    static uint8_t vecWriteCount = 0;
+    if (addr >= 0x000A && addr <= 0x000D && vecWriteCount < 40) {
       static const char* TAG = "DOSVEC";
-      PlatformManager::getInstance().log(LOG_INFO, TAG, "Write $%04X = $%02X", addr, val);
-      dosvecWriteCount++;
+      const char* vecName = "";
+      switch (addr) {
+        case 0x000A: vecName = "DOSVEC_LO"; break;
+        case 0x000B: vecName = "DOSVEC_HI"; break;
+        case 0x000C: vecName = "DOSINI_LO"; break;
+        case 0x000D: vecName = "DOSINI_HI"; break;
+      }
+      PlatformManager::getInstance().log(LOG_INFO, TAG, "Write %s ($%04X) = $%02X from PC=$%04X",
+          vecName, addr, val, pc);
+      vecWriteCount++;
     }
 
     // Debug: trace writes to screen memory area (around $9C40)
