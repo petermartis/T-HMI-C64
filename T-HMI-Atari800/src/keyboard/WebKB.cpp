@@ -25,6 +25,7 @@
 #include "SDLKeymap.h"
 #include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
+#include <SD_MMC.h>
 #include <WiFi.h>
 #include <cctype>
 #include <set>
@@ -656,6 +657,101 @@ void WebKB::startWebServer() {
 
   server->on("/", HTTP_GET, [](AsyncWebServerRequest *req) {
     req->send(200, "text/html", HTMLCSSKB_html, HTMLCSSKB_html_len);
+  });
+
+  // File upload endpoint for XEX/BIN files
+  server->on("/upload", HTTP_POST,
+    // Request handler (called after upload completes)
+    [this](AsyncWebServerRequest *request) {
+      if (request->hasParam("success", true)) {
+        String filename = request->getParam("success", true)->value();
+        request->send(200, "application/json", "{\"status\":\"ok\",\"file\":\"" + filename + "\"}");
+
+        // Trigger file load via ExtCmd mechanism
+        PlatformManager::getInstance().log(LOG_INFO, TAG, "Upload complete, loading: %s", filename.c_str());
+        memset(extCmdBuffer, 0, sizeof(extCmdBuffer));
+        extCmdBuffer[0] = static_cast<uint8_t>(ExtCmd::LOAD);
+        extCmdBuffer[1] = 0;
+        extCmdBuffer[2] = 0x80;  // Flag to indicate command ready
+        strncpy(reinterpret_cast<char*>(&extCmdBuffer[3]), filename.c_str(), 250);
+        gotExternalCmd.store(true);
+      } else {
+        request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Upload failed\"}");
+      }
+    },
+    // File upload handler (called for each chunk)
+    [this](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final) {
+      static File uploadFile;
+      String filepath = "/" + filename;
+
+      if (index == 0) {
+        // First chunk - open file for writing
+        PlatformManager::getInstance().log(LOG_INFO, TAG, "Upload started: %s", filename.c_str());
+        uploadFile = SD_MMC.open(filepath.c_str(), FILE_WRITE);
+        if (!uploadFile) {
+          PlatformManager::getInstance().log(LOG_ERROR, TAG, "Failed to open file for writing: %s", filepath.c_str());
+          return;
+        }
+      }
+
+      if (uploadFile && len > 0) {
+        uploadFile.write(data, len);
+      }
+
+      if (final) {
+        if (uploadFile) {
+          uploadFile.close();
+          PlatformManager::getInstance().log(LOG_INFO, TAG, "Upload finished: %s (%d bytes)", filename.c_str(), index + len);
+          // Store filename for the request handler
+          request->addParam(new AsyncWebParameter("success", filepath, true));
+        }
+      }
+    }
+  );
+
+  // File list endpoint
+  server->on("/files", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String json = "[";
+    File root = SD_MMC.open("/");
+    if (root && root.isDirectory()) {
+      File file = root.openNextFile();
+      bool first = true;
+      while (file) {
+        String name = file.name();
+        // Only list XEX, COM, BIN, ATR files
+        if (name.endsWith(".xex") || name.endsWith(".XEX") ||
+            name.endsWith(".com") || name.endsWith(".COM") ||
+            name.endsWith(".bin") || name.endsWith(".BIN") ||
+            name.endsWith(".atr") || name.endsWith(".ATR")) {
+          if (!first) json += ",";
+          json += "\"" + name + "\"";
+          first = false;
+        }
+        file = root.openNextFile();
+      }
+    }
+    json += "]";
+    request->send(200, "application/json", json);
+  });
+
+  // Load file by name endpoint
+  server->on("/load", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (request->hasParam("file")) {
+      String filename = request->getParam("file")->value();
+      PlatformManager::getInstance().log(LOG_INFO, TAG, "Load requested: %s", filename.c_str());
+
+      // Trigger file load via ExtCmd mechanism
+      memset(extCmdBuffer, 0, sizeof(extCmdBuffer));
+      extCmdBuffer[0] = static_cast<uint8_t>(ExtCmd::LOAD);
+      extCmdBuffer[1] = 0;
+      extCmdBuffer[2] = 0x80;
+      strncpy(reinterpret_cast<char*>(&extCmdBuffer[3]), filename.c_str(), 250);
+      gotExternalCmd.store(true);
+
+      request->send(200, "application/json", "{\"status\":\"ok\",\"file\":\"" + filename + "\"}");
+    } else {
+      request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing file parameter\"}");
+    }
   });
 
   server->begin();

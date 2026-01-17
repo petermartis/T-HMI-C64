@@ -246,14 +246,22 @@ void Atari800Emu::handleExternalCommands() {
 
   switch (cmd) {
   case ExtCmd::LOAD:
-    // Show file list and load first found XEX file (simplified)
+    // Load file - if filename provided in extCmd[3..], use it; otherwise load first found
     {
-      auto files = listFiles();
-      if (!files.empty()) {
-        PlatformManager::getInstance().log(LOG_INFO, TAG, "Found %zu files, loading first", files.size());
-        loadFile(files[0]);
+      // Check if filename provided (extCmd[3] != 0 means filename follows)
+      if (extCmd[3] != 0) {
+        std::string filename(reinterpret_cast<char*>(&extCmd[3]));
+        PlatformManager::getInstance().log(LOG_INFO, TAG, "Loading specified file: %s", filename.c_str());
+        loadFile(filename);
       } else {
-        PlatformManager::getInstance().log(LOG_WARN, TAG, "No Atari files found on SD card");
+        // No filename - load first found XEX file (legacy behavior)
+        auto files = listFiles();
+        if (!files.empty()) {
+          PlatformManager::getInstance().log(LOG_INFO, TAG, "Found %zu files, loading first", files.size());
+          loadFile(files[0]);
+        } else {
+          PlatformManager::getInstance().log(LOG_WARN, TAG, "No Atari files found on SD card");
+        }
       }
     }
     break;
