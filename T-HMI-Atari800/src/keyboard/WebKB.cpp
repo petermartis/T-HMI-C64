@@ -517,6 +517,7 @@ void WebKB::init() {
   server = new AsyncWebServer(port);
 
   // Event callbacks for WiFi events - server starts only after network is ready
+  // Use deferred timers to ensure server starts in the correct task context
   WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
     switch (event) {
       case ARDUINO_EVENT_WIFI_STA_GOT_IP:
@@ -524,12 +525,14 @@ void WebKB::init() {
                                            "Wifi connected. IP address: %s",
                                            WiFi.localIP().toString());
         startOneShotTimer([this]() { this->printIPAddress(); }, 4000);
-        startWebServer();
+        // Defer server start to timer task context
+        startOneShotTimer([this]() { this->startWebServer(); }, 100);
         break;
       case ARDUINO_EVENT_WIFI_AP_START:
         PlatformManager::getInstance().log(LOG_INFO, TAG,
-                                           "AP started, starting captive portal server...");
-        startCaptivePortalServer();
+                                           "AP started, will start captive portal server...");
+        // Defer server start to timer task context for proper TCPIP locking
+        startOneShotTimer([this]() { this->startCaptivePortalServer(); }, 100);
         break;
       default:
         break;
