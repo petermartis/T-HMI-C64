@@ -88,7 +88,6 @@ private:
   void printIPAddress();
   String getNetworksHTML();
   void startCaptivePortal();
-  void startCaptivePortalServer();
   void connectToWiFi(const String &ssid, const String &pass);
 
   void setKBcodes(uint8_t sentdc01, uint8_t sentdc00) {
@@ -115,10 +114,6 @@ private:
   bool shiftlock = false;
   String lastUploadedFile;  // For file upload handling
 
-  // Deferred server start flags (set by WiFi events, checked in scanKeyboard)
-  std::atomic<bool> pendingCaptivePortalStart{false};
-  std::atomic<bool> pendingWebServerStart{false};
-  bool serverStarted{false};
   std::queue<CodeTriple> eventQueue;
   SemaphoreHandle_t queueSem;
   ActiveKey currentKey;

@@ -29,7 +29,6 @@
 #include <WiFi.h>
 #include <cctype>
 #include <set>
-#include <lwip/tcpip.h>  // For LOCK_TCPIP_CORE
 
 // html/css/javascript web keyboard
 #include "htmlcode.h"
@@ -514,32 +513,17 @@ void WebKB::init() {
 
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Init Wifi");
 
-  // TEMPORARY: Skip WiFi initialization due to TCPIP core locking issues
-  // with ESP-IDF 5.x / Arduino ESP32 3.x. The emulator will work but
-  // without web keyboard. Remove this #if 0 once the issue is resolved.
-#if 0
   // create webserver instance
   server = new AsyncWebServer(port);
 
-  // Event callbacks for WiFi events - set flags to defer server start
-  // Server will be started from scanKeyboard() which runs in the main task context
+  // Event callback for STA mode (connecting to existing WiFi)
   WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
-    switch (event) {
-      case ARDUINO_EVENT_WIFI_STA_GOT_IP:
-        PlatformManager::getInstance().log(LOG_INFO, TAG,
-                                           "Wifi connected. IP address: %s",
-                                           WiFi.localIP().toString());
-        // Set flag to start web server from main task context
-        pendingWebServerStart.store(true);
-        break;
-      case ARDUINO_EVENT_WIFI_AP_START:
-        PlatformManager::getInstance().log(LOG_INFO, TAG,
-                                           "AP started, will start captive portal server...");
-        // Set flag to start captive portal from main task context
-        pendingCaptivePortalStart.store(true);
-        break;
-      default:
-        break;
+    if (event == ARDUINO_EVENT_WIFI_STA_GOT_IP) {
+      PlatformManager::getInstance().log(LOG_INFO, TAG,
+                                         "Wifi connected. IP address: %s",
+                                         WiFi.localIP().toString());
+      startOneShotTimer([this]() { this->printIPAddress(); }, 4000);
+      startWebServer();
     }
   });
 
@@ -553,10 +537,6 @@ void WebKB::init() {
   } else {
     startCaptivePortal();
   }
-#else
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "WiFi disabled (TCPIP core locking issue)");
-  serverStarted = true;  // Pretend server started so loop doesn't keep trying
-#endif
 
   // start with joystickmode 2 at startup
   extCmdBuffer[0] =
@@ -585,22 +565,18 @@ String WebKB::getNetworksHTML() {
   return options;
 }
 
-// setup an access point - server will be started via AP_START event
+// setup an access point and redirect to the captive portal
+// Matches C64 WebKB exactly - direct start without deferral
 void WebKB::startCaptivePortal() {
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting WiFi AP...");
+
   WiFi.mode(WIFI_AP);
   WiFi.softAP(AP_SSID, AP_PASSWORD);
-  // Server will be started in startCaptivePortalServer() via WIFI_AP_START event
-}
 
-// Called from WiFi AP_START event - starts the captive portal server
-void WebKB::startCaptivePortalServer() {
   PlatformManager::getInstance().log(LOG_INFO, TAG,
                                      "Wifi access point ip adress: %s",
                                      WiFi.softAPIP().toString());
 
-  // Lock TCPIP core for network operations
-  LOCK_TCPIP_CORE();
   dns_server.start(53, "*", WiFi.softAPIP());
 
   server->on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
@@ -634,9 +610,9 @@ void WebKB::startCaptivePortalServer() {
   });
 
   server->begin();
-  UNLOCK_TCPIP_CORE();
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Captive portal server started");
 }
+
 
 void WebKB::connectToWiFi(const String &ssid, const String &pass) {
 
@@ -671,9 +647,6 @@ void WebKB::connectToWiFi(const String &ssid, const String &pass) {
 
 void WebKB::startWebServer() {
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting web server...");
-
-  // Lock TCPIP core for network operations
-  LOCK_TCPIP_CORE();
 
   ws = new AsyncWebSocket("/ws");
 
@@ -830,7 +803,6 @@ void WebKB::startWebServer() {
   });
 
   server->begin();
-  UNLOCK_TCPIP_CORE();
 
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Webserver started.");
 }
@@ -1054,20 +1026,8 @@ void WebKB::processSingleKey(const char *type, const char *keyId, bool shift,
 }
 
 bool WebKB::processDeferredOperations() {
-  // Check for deferred server start (must run from main task context for TCPIP core access)
-  if (!serverStarted) {
-    if (pendingCaptivePortalStart.load()) {
-      pendingCaptivePortalStart.store(false);
-      startCaptivePortalServer();
-      serverStarted = true;
-    } else if (pendingWebServerStart.load()) {
-      pendingWebServerStart.store(false);
-      printIPAddress();
-      startWebServer();
-      serverStarted = true;
-    }
-  }
-  return serverStarted;
+  // WiFi server is started directly in init(), so nothing deferred
+  return true;
 }
 
 void WebKB::scanKeyboard() {
