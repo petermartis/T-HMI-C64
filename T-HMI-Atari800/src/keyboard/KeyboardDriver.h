@@ -107,6 +107,14 @@ public:
   virtual void setDetectReleasekey(bool detectreleasekey) = 0;
 
   /**
+   * @brief Process deferred operations that must run from the main task context.
+   *
+   * Called from the main loop to handle operations (like starting web servers)
+   * that require proper TCPIP core access and cannot run from timer callbacks.
+   */
+  virtual void processDeferredOperations() {}
+
+  /**
    * @brief Retrieves the current Atari key code for POKEY.
    *
    * Returns the key code in POKEY KBCODE format:

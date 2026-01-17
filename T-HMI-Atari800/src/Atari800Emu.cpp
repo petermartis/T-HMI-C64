@@ -214,6 +214,11 @@ void Atari800Emu::loop() {
     PlatformManager::getInstance().log(LOG_INFO, TAG, "loop() #%lu, refreshs=%d", loopCount, sys.antic.cntRefreshs.load());
   }
 
+  // Process deferred keyboard operations (like web server start) from main task context
+  if (sys.keyboard) {
+    sys.keyboard->processDeferredOperations();
+  }
+
   // Handle pending file load requests
   if (loadFileRequested.load()) {
     loadFileRequested.store(false);

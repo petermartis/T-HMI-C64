@@ -1037,8 +1037,7 @@ void WebKB::processSingleKey(const char *type, const char *keyId, bool shift,
   }
 }
 
-void WebKB::scanKeyboard() {
-
+void WebKB::processDeferredOperations() {
   // Check for deferred server start (must run from main task context for TCPIP core access)
   if (!serverStarted) {
     if (pendingCaptivePortalStart.load()) {
@@ -1052,6 +1051,9 @@ void WebKB::scanKeyboard() {
       serverStarted = true;
     }
   }
+}
+
+void WebKB::scanKeyboard() {
 
   // countdown
   if (currentKey.active && currentKey.holdTicks > 0) {
