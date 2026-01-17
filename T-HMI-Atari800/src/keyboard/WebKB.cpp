@@ -29,7 +29,6 @@
 #include <WiFi.h>
 #include <cctype>
 #include <set>
-#include <lwip/tcpip.h>  // For LOCK_TCPIP_CORE
 
 // html/css/javascript web keyboard
 #include "htmlcode.h"
@@ -564,12 +563,15 @@ String WebKB::getNetworksHTML() {
 }
 
 // setup an access point and redirect to the captive portal
-// Matches C64 WebKB exactly - direct start without deferral
+// Server start is deferred to Core 1 for TCPIP safety
 void WebKB::startCaptivePortal() {
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting WiFi AP...");
 
   WiFi.mode(WIFI_AP);
   WiFi.softAP(AP_SSID, AP_PASSWORD);
+
+  // Give the TCPIP stack time to fully initialize the AP
+  delay(100);
 
   PlatformManager::getInstance().log(LOG_INFO, TAG,
                                      "Wifi access point ip adress: %s",
@@ -607,10 +609,8 @@ void WebKB::startCaptivePortal() {
     startOneShotTimer([]() { ESP.restart(); }, 2000);
   });
 
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Locking TCPIP core for server->begin()...");
-  LOCK_TCPIP_CORE();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting server...");
   server->begin();
-  UNLOCK_TCPIP_CORE();
   serverStarted = true;
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Captive portal server started");
 }
@@ -804,11 +804,8 @@ void WebKB::startWebServer() {
     request->send(200, "application/json", "{\"status\":\"ok\"}");
   });
 
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Locking TCPIP core for server->begin()...");
-  LOCK_TCPIP_CORE();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting server...");
   server->begin();
-  UNLOCK_TCPIP_CORE();
-
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Webserver started.");
 }
 
