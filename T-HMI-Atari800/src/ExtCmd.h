@@ -281,7 +281,22 @@ enum class ExtCmd {
    * - byte 12-: text to be displayed
    */
   WRITEOSD = 39,
-  PAUSE = 40
+  PAUSE = 40,
+
+  /**
+   * @brief Attach an ATR disk image file for Atari emulation.
+   *
+   * The name of the ATR file is stored starting at buffer position 4 (from
+   * buffer[3]).
+   */
+  ATTACHATR = 41,
+
+  /**
+   * @brief Detach ATR disk image from Atari emulation.
+   *
+   * No parameters needed.
+   */
+  DETACHATR = 42
 };
 
 #endif // EXTCMD_H

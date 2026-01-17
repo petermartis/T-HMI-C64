@@ -659,7 +659,7 @@ void WebKB::startWebServer() {
     req->send(200, "text/html", HTMLCSSKB_html, HTMLCSSKB_html_len);
   });
 
-  // File upload endpoint for XEX/BIN files
+  // File upload endpoint for XEX/BIN/ATR files
   server->on("/upload", HTTP_POST,
     // Request handler (called after upload completes)
     [this](AsyncWebServerRequest *request) {
@@ -667,10 +667,19 @@ void WebKB::startWebServer() {
         String filename = request->getParam("success", true)->value();
         request->send(200, "application/json", "{\"status\":\"ok\",\"file\":\"" + filename + "\"}");
 
-        // Trigger file load via ExtCmd mechanism
-        PlatformManager::getInstance().log(LOG_INFO, TAG, "Upload complete, loading: %s", filename.c_str());
+        // Determine action based on file extension
+        bool isATR = filename.endsWith(".atr") || filename.endsWith(".ATR");
+
         memset(extCmdBuffer, 0, sizeof(extCmdBuffer));
-        extCmdBuffer[0] = static_cast<uint8_t>(ExtCmd::LOAD);
+        if (isATR) {
+          // Mount ATR disk image
+          PlatformManager::getInstance().log(LOG_INFO, TAG, "Upload complete, mounting ATR: %s", filename.c_str());
+          extCmdBuffer[0] = static_cast<uint8_t>(ExtCmd::ATTACHATR);
+        } else {
+          // Load XEX/BIN/COM file
+          PlatformManager::getInstance().log(LOG_INFO, TAG, "Upload complete, loading: %s", filename.c_str());
+          extCmdBuffer[0] = static_cast<uint8_t>(ExtCmd::LOAD);
+        }
         extCmdBuffer[1] = 0;
         extCmdBuffer[2] = 0x80;  // Flag to indicate command ready
         strncpy(reinterpret_cast<char*>(&extCmdBuffer[3]), filename.c_str(), 250);
@@ -752,6 +761,40 @@ void WebKB::startWebServer() {
     } else {
       request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing file parameter\"}");
     }
+  });
+
+  // Mount ATR disk image endpoint
+  server->on("/mount", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (request->hasParam("file")) {
+      String filename = request->getParam("file")->value();
+      PlatformManager::getInstance().log(LOG_INFO, TAG, "Mount ATR requested: %s", filename.c_str());
+
+      // Trigger ATR mount via ExtCmd mechanism
+      memset(extCmdBuffer, 0, sizeof(extCmdBuffer));
+      extCmdBuffer[0] = static_cast<uint8_t>(ExtCmd::ATTACHATR);
+      extCmdBuffer[1] = 0;
+      extCmdBuffer[2] = 0x80;
+      strncpy(reinterpret_cast<char*>(&extCmdBuffer[3]), filename.c_str(), 250);
+      gotExternalCmd.store(true);
+
+      request->send(200, "application/json", "{\"status\":\"ok\",\"file\":\"" + filename + "\"}");
+    } else {
+      request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing file parameter\"}");
+    }
+  });
+
+  // Unmount ATR disk image endpoint
+  server->on("/unmount", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "Unmount ATR requested");
+
+    // Trigger ATR unmount via ExtCmd mechanism
+    memset(extCmdBuffer, 0, sizeof(extCmdBuffer));
+    extCmdBuffer[0] = static_cast<uint8_t>(ExtCmd::DETACHATR);
+    extCmdBuffer[1] = 0;
+    extCmdBuffer[2] = 0x80;
+    gotExternalCmd.store(true);
+
+    request->send(200, "application/json", "{\"status\":\"ok\"}");
   });
 
   server->begin();

@@ -270,6 +270,26 @@ void Atari800Emu::handleExternalCommands() {
     sys.reset();
     break;
 
+  case ExtCmd::ATTACHATR:
+    // Mount ATR disk image - filename in extCmd[3..]
+    {
+      if (extCmd[3] != 0) {
+        std::string filename(reinterpret_cast<char*>(&extCmd[3]));
+        PlatformManager::getInstance().log(LOG_INFO, TAG, "Mounting ATR: %s", filename.c_str());
+        if (mountATR(filename)) {
+          PlatformManager::getInstance().log(LOG_INFO, TAG, "ATR mounted successfully");
+        } else {
+          PlatformManager::getInstance().log(LOG_ERROR, TAG, "Failed to mount ATR");
+        }
+      }
+    }
+    break;
+
+  case ExtCmd::DETACHATR:
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "Unmounting ATR");
+    unmountATR();
+    break;
+
   default:
     // Other commands not handled yet
     break;
