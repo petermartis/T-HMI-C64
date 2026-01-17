@@ -1046,6 +1046,9 @@ bool WebKB::processDeferredOperations() {
     if (storedSSID.length()) {
       // Try to connect to stored WiFi
       connectToWiFi(storedSSID, storedPASS);
+      // After connectToWiFi returns, check if we need to start the web server
+      // The WiFi event callback should have set pendingWebServerStart
+      PlatformManager::getInstance().log(LOG_INFO, TAG, "connectToWiFi returned, pendingWebServerStart=%d", pendingWebServerStart.load());
     } else {
       // Start captive portal
       startCaptivePortal();
@@ -1055,6 +1058,7 @@ bool WebKB::processDeferredOperations() {
 
   // Step 2: Start web server if pending (after STA connection)
   if (pendingWebServerStart.load()) {
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting web server (deferred)...");
     pendingWebServerStart.store(false);
     startOneShotTimer([this]() { this->printIPAddress(); }, 4000);
     startWebServer();
