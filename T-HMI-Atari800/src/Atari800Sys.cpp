@@ -383,6 +383,9 @@ void Atari800Sys::logDebugInfo() {
 
 void Atari800Sys::scanKeyboard() {
   if (keyboard) {
+    // Call keyboard driver's scan function (handles deferred operations)
+    keyboard->scanKeyboard();
+
     // Get Atari key code from keyboard driver and send to POKEY
     uint8_t keyCode = keyboard->getAtariKeyCode();
     bool keyPressed = keyboard->isAtariKeyPressed();
