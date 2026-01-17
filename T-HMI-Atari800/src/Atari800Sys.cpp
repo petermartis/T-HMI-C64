@@ -153,7 +153,24 @@ uint8_t Atari800Sys::getMem(uint16_t addr) {
     if (basicRomEnabled && basicRom) {
       uint8_t val = basicRom[addr - 0xA000];
 
-      // Patch BASIC ROM RUN vector to $A000 if it's wrong
+      // Patch BASIC ROM cartridge header for proper XL boot
+      // The ROM has FLAGS=$00 and RUN=$0500 which doesn't work
+      if (addr == 0xBFFA) {
+        // FLAGS byte: bit 2 set = cartridge wants to run
+        // Original BASIC has FLAGS=$00, but XL OS needs bit 2 set
+        if (val == 0x00) {
+          static bool flagsLogged = false;
+          if (!flagsLogged) {
+            static const char* TAG = "BASIC";
+            PlatformManager::getInstance().log(LOG_WARN, TAG,
+                "Patching FLAGS: $00 -> $04 (enable cartridge run)");
+            flagsLogged = true;
+          }
+          val = 0x04;  // Set bit 2: cartridge wants to run
+        }
+      }
+
+      // Patch RUN vector to $A000 if it's wrong
       // Some ROM dumps have RUN=$0500 instead of $A000
       if (addr == 0xBFFD) {
         uint8_t runHi = basicRom[0x1FFD];
