@@ -568,16 +568,24 @@ void WebKB::startCaptivePortal() {
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting WiFi AP...");
 
   WiFi.mode(WIFI_AP);
+
+  // Configure soft AP with explicit IP settings to ensure DHCP works
+  IPAddress local_IP(192, 168, 4, 1);
+  IPAddress gateway(192, 168, 4, 1);
+  IPAddress subnet(255, 255, 255, 0);
+  WiFi.softAPConfig(local_IP, gateway, subnet);
+
   WiFi.softAP(AP_SSID, AP_PASSWORD);
 
-  // Give the TCPIP stack time to fully initialize the AP
-  delay(100);
+  // Give the TCPIP stack time to fully initialize the AP and DHCP
+  delay(500);
 
   PlatformManager::getInstance().log(LOG_INFO, TAG,
                                      "Wifi access point ip adress: %s",
                                      WiFi.softAPIP().toString());
 
   dns_server.start(53, "*", WiFi.softAPIP());
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "DNS server started");
 
   server->on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
     String page = portalHTML;
