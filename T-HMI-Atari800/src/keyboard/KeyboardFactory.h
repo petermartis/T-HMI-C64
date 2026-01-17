@@ -20,24 +20,7 @@
 #include "../Config.h"
 #include "KeyboardDriver.h"
 
-// Temporarily disable WiFi keyboard to test display
-#define SKIP_WIFI_KEYBOARD 1
-
-#if defined(SKIP_WIFI_KEYBOARD)
-// Minimal stub keyboard - no WiFi blocking
-class NoKeyboard : public KeyboardDriver {
-public:
-  void init() override {}
-  void scanKeyboard() override {}
-  uint8_t getKBCodeDC01() override { return 0xFF; }
-  uint8_t getKBCodeDC00() override { return 0xFF; }
-  uint8_t getShiftctrlcode() override { return 0; }
-  uint8_t getKBJoyValue() override { return 0xFF; }
-  uint8_t *getExtCmdData() override { return nullptr; }
-  void sendExtCmdNotification(uint8_t *data, size_t size) override {}
-  void setDetectReleasekey(bool detectreleasekey) override {}
-};
-#elif defined(USE_BLE_KEYBOARD)
+#if defined(USE_BLE_KEYBOARD)
 #include "BLEKB.h"
 #elif defined(USE_SDL_KEYBOARD)
 #include "SDLKB.h"
@@ -49,9 +32,7 @@ public:
 
 namespace Keyboard {
 KeyboardDriver *create() {
-#if defined(SKIP_WIFI_KEYBOARD)
-  return new NoKeyboard();
-#elif defined(USE_BLE_KEYBOARD)
+#if defined(USE_BLE_KEYBOARD)
   return new BLEKB();
 #elif defined(USE_SDL_KEYBOARD)
   return new SDLKB();
