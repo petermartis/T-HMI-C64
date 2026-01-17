@@ -571,9 +571,15 @@ void WebKB::startCaptivePortal() {
   WiFi.mode(WIFI_AP);
   WiFi.softAP(AP_SSID, AP_PASSWORD);
 
+  // Wait for AP to be fully started before using network stack
+  delay(500);
+
   PlatformManager::getInstance().log(LOG_INFO, TAG,
                                      "Wifi access point ip adress: %s",
                                      WiFi.softAPIP().toString());
+
+  // Additional delay to ensure TCP/IP stack is ready
+  delay(100);
 
   dns_server.start(53, "*", WiFi.softAPIP());
 
