@@ -514,6 +514,10 @@ void WebKB::init() {
 
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Init Wifi");
 
+  // TEMPORARY: Skip WiFi initialization due to TCPIP core locking issues
+  // with ESP-IDF 5.x / Arduino ESP32 3.x. The emulator will work but
+  // without web keyboard. Remove this #if 0 once the issue is resolved.
+#if 0
   // create webserver instance
   server = new AsyncWebServer(port);
 
@@ -549,6 +553,10 @@ void WebKB::init() {
   } else {
     startCaptivePortal();
   }
+#else
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "WiFi disabled (TCPIP core locking issue)");
+  serverStarted = true;  // Pretend server started so loop doesn't keep trying
+#endif
 
   // start with joystickmode 2 at startup
   extCmdBuffer[0] =
