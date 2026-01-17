@@ -115,16 +115,7 @@ uint8_t GTIA::read(uint8_t addr) {
   case TRIG2:
     return trig[2];
   case TRIG3:
-    // On XL/XE, TRIG3=0 means cartridge/BASIC present
-    {
-      static uint8_t trig3ReadCount = 0;
-      if (trig3ReadCount < 10) {
-        // Debug log TRIG3 reads (limited to avoid spam)
-        extern void logPIA(const char* msg, uint8_t val);
-        logPIA("TRIG3 read (BASIC present?)", trig[3]);
-        trig3ReadCount++;
-      }
-    }
+    // On XL/XE, TRIG3=0 means cartridge/BASIC present, 1=not present
     return trig[3];
 
   // PAL/NTSC flag

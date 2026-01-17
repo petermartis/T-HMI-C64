@@ -15,13 +15,6 @@
  http://www.gnu.org/licenses/.
 */
 #include "PIA.h"
-#include "platform/PlatformManager.h"
-
-// Helper for debug logging
-void logPIA(const char* msg, uint8_t val) {
-  static const char* TAG = "PIA";
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "%s: $%02X", msg, val);
-}
 
 PIA::PIA() { reset(); }
 
@@ -64,24 +57,9 @@ uint8_t PIA::read(uint8_t addr) {
 
   case PORTB:
     if (pbctl & PIA_DDR) {
-      // Read data register
-      static uint8_t portbReadCount = 0;
-      if (portbReadCount < 10) {
-        // Debug log
-        extern void logPIA(const char* msg, uint8_t val);
-        logPIA("PORTB read (data)", portb);
-        portbReadCount++;
-      }
-      return portb;
+      return portb;  // Read data register
     } else {
-      // Read DDR
-      static uint8_t ddrbReadCount = 0;
-      if (ddrbReadCount < 10) {
-        extern void logPIA(const char* msg, uint8_t val);
-        logPIA("PORTB read (DDR)", ddrb);
-        ddrbReadCount++;
-      }
-      return ddrb;
+      return ddrb;   // Read DDR
     }
 
   case PACTL:
@@ -111,26 +89,10 @@ void PIA::write(uint8_t addr, uint8_t val) {
 
   case PORTB:
     if (pbctl & PIA_DDR) {
-      // Write data register
-      // Only bits set as outputs in ddrb can be written
-      uint8_t oldPortb = portb;
+      // Write data register (only bits set as outputs in ddrb can be written)
       portb = (val & ddrb) | (portb & ~ddrb);
-      // Debug: log PORTB changes that affect BASIC enable (bit 1)
-      static uint8_t portbWriteCount = 0;
-      if (portbWriteCount < 20) {
-        logPIA("PORTB write", val);
-        PlatformManager::getInstance().log(LOG_INFO, "PIA",
-            "  ddrb=$%02X old=$%02X new=$%02X BASIC=%s",
-            ddrb, oldPortb, portb, (portb & 0x02) ? "OFF" : "ON");
-        portbWriteCount++;
-      }
     } else {
       // Write DDR
-      static uint8_t ddrbWriteCount = 0;
-      if (ddrbWriteCount < 10) {
-        logPIA("PORTB DDR write", val);
-        ddrbWriteCount++;
-      }
       ddrb = val;
     }
     break;

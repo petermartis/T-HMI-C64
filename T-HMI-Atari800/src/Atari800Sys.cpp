@@ -120,8 +120,7 @@ void Atari800Sys::reset() {
 
 void Atari800Sys::updateBanking() {
   uint8_t portb = pia.getPortB();
-  bool wasOsEnabled = osRomEnabled;
-  bool wasBasicEnabled = basicRomEnabled;
+
   osRomEnabled = (portb & PORTB_OS_ROM) == 0;
   basicRomEnabled = (portb & PORTB_BASIC) == 0;
   selfTestEnabled = (portb & PORTB_SELFTEST) == 0;
@@ -129,13 +128,6 @@ void Atari800Sys::updateBanking() {
   // Update TRIG3 to reflect BASIC/cartridge state
   // On XL/XE, TRIG3=0 means cartridge/BASIC present, TRIG3=1 means not present
   gtia.setCartridgePresent(basicRomEnabled);
-
-  // Debug: log when banking changes
-  if (wasOsEnabled != osRomEnabled || wasBasicEnabled != basicRomEnabled) {
-    static const char* TAG = "BANK";
-    PlatformManager::getInstance().log(LOG_INFO, TAG, "PORTB=%02X osRom=%d basic=%d->%d self=%d TRIG3=%d",
-        portb, osRomEnabled, wasBasicEnabled, basicRomEnabled, selfTestEnabled, basicRomEnabled ? 0 : 1);
-  }
 }
 
 uint8_t Atari800Sys::getMem(uint16_t addr) {
@@ -154,64 +146,19 @@ uint8_t Atari800Sys::getMem(uint16_t addr) {
       uint8_t val = basicRom[addr - 0xA000];
 
       // Patch BASIC ROM cartridge header for proper XL boot
-      // The ROM has FLAGS=$00 and RUN=$0500 which doesn't work
-      if (addr == 0xBFFA) {
+      // The ROM has FLAGS=$00 and RUN=$0500 which doesn't work correctly
+      if (addr == 0xBFFA && val == 0x00) {
         // FLAGS byte: bit 2 set = cartridge wants to run
-        // Original BASIC has FLAGS=$00, but XL OS needs bit 2 set
-        if (val == 0x00) {
-          static bool flagsLogged = false;
-          if (!flagsLogged) {
-            static const char* TAG = "BASIC";
-            PlatformManager::getInstance().log(LOG_WARN, TAG,
-                "Patching FLAGS: $00 -> $04 (enable cartridge run)");
-            flagsLogged = true;
-          }
-          val = 0x04;  // Set bit 2: cartridge wants to run
-        }
+        val = 0x04;
+      }
+      if (addr == 0xBFFD && basicRom[0x1FFD] != 0xA0) {
+        // RUN vector high byte: force to $A0 for BASIC cold start at $A000
+        val = 0xA0;
       }
 
-      // Patch RUN vector to $A000 if it's wrong
-      // Some ROM dumps have RUN=$0500 instead of $A000
-      if (addr == 0xBFFD) {
-        uint8_t runHi = basicRom[0x1FFD];
-        if (runHi != 0xA0) {
-          static bool patchLogged = false;
-          if (!patchLogged) {
-            static const char* TAG = "BASIC";
-            PlatformManager::getInstance().log(LOG_WARN, TAG,
-                "Patching RUN vector: $%02X00 -> $A000", runHi);
-            patchLogged = true;
-          }
-          val = 0xA0;  // Patch RUN_HI for BASIC cold start
-        }
-      }
-
-      // Debug: log reads of cartridge vectors ($BFFA-$BFFF)
-      static uint8_t cartVecReadCount = 0;
-      if (addr >= 0xBFFA && cartVecReadCount < 30) {
-        static const char* TAG = "CARTVEC";
-        const char* vecName = "";
-        switch (addr) {
-          case 0xBFFA: vecName = "FLAGS"; break;
-          case 0xBFFB: vecName = "RESERVED"; break;
-          case 0xBFFC: vecName = "RUN_LO"; break;
-          case 0xBFFD: vecName = "RUN_HI"; break;
-          case 0xBFFE: vecName = "INIT_LO"; break;
-          case 0xBFFF: vecName = "INIT_HI"; break;
-        }
-        PlatformManager::getInstance().log(LOG_INFO, TAG, "Read $%04X (%s) = $%02X from PC=$%04X",
-            addr, vecName, val, pc);
-        cartVecReadCount++;
-      }
       return val;
     }
-    // BASIC disabled - reading from RAM
-    static uint8_t basicDisabledReadCount = 0;
-    if (addr >= 0xBFFA && basicDisabledReadCount < 10) {
-      static const char* TAG = "CARTVEC";
-      PlatformManager::getInstance().log(LOG_INFO, TAG, "Read $%04X from RAM (BASIC disabled) = $%02X", addr, ram[addr]);
-      basicDisabledReadCount++;
-    }
+    // BASIC disabled - reading from RAM underneath
     return ram[addr];
   }
 
@@ -238,23 +185,6 @@ void Atari800Sys::setMem(uint16_t addr, uint8_t val) {
   // RAM always writable in all regions
   // The OS can write to RAM under ROM at any time
 
-  // Debug: Log writes to ROM-shadowed area
-  static uint32_t writeCount = 0;
-  if (addr >= 0xC000 && addr < 0xD000) {
-    if (writeCount < 50) {
-      static const char* TAG = "WMEM";
-      PlatformManager::getInstance().log(LOG_INFO, TAG, "Write $%04X = $%02X (C-region)", addr, val);
-      writeCount++;
-    }
-  }
-  if (addr >= 0xD800) {
-    if (writeCount < 50) {
-      static const char* TAG = "WMEM";
-      PlatformManager::getInstance().log(LOG_INFO, TAG, "Write $%04X = $%02X (D8-region)", addr, val);
-      writeCount++;
-    }
-  }
-
   if (addr < 0xA000) {
     // Low RAM ($0000-$9FFF)
 
@@ -262,50 +192,12 @@ void Atari800Sys::setMem(uint16_t addr, uint8_t val) {
     // The XL OS sets DOSVEC to $F223 early in boot but doesn't update it for BASIC
     // We intercept this and force it to $A000 when BASIC ROM is enabled
     if (addr == 0x000A && val == 0x23 && basicRomEnabled) {
-      static bool dosvecPatchLogged = false;
-      if (!dosvecPatchLogged) {
-        static const char* TAG = "DOSVEC";
-        PlatformManager::getInstance().log(LOG_WARN, TAG,
-            "Forcing DOSVEC_LO: $23 -> $00 (BASIC @ $A000)");
-        dosvecPatchLogged = true;
-      }
       val = 0x00;  // BASIC cold start at $A000
     }
     if (addr == 0x000B && val == 0xF2 && basicRomEnabled) {
-      static bool dosvecHiPatchLogged = false;
-      if (!dosvecHiPatchLogged) {
-        static const char* TAG = "DOSVEC";
-        PlatformManager::getInstance().log(LOG_WARN, TAG,
-            "Forcing DOSVEC_HI: $F2 -> $A0 (BASIC @ $A000)");
-        dosvecHiPatchLogged = true;
-      }
       val = 0xA0;  // BASIC cold start at $A000
     }
 
-    // Debug: trace writes to DOSVEC ($000A-$000B) and DOSINI ($000C-$000D)
-    static uint8_t vecWriteCount = 0;
-    if (addr >= 0x000A && addr <= 0x000D && vecWriteCount < 40) {
-      static const char* TAG = "DOSVEC";
-      const char* vecName = "";
-      switch (addr) {
-        case 0x000A: vecName = "DOSVEC_LO"; break;
-        case 0x000B: vecName = "DOSVEC_HI"; break;
-        case 0x000C: vecName = "DOSINI_LO"; break;
-        case 0x000D: vecName = "DOSINI_HI"; break;
-      }
-      PlatformManager::getInstance().log(LOG_INFO, TAG, "Write %s ($%04X) = $%02X from PC=$%04X",
-          vecName, addr, val, pc);
-      vecWriteCount++;
-    }
-
-    // Debug: trace writes to screen memory area (around $9C40)
-    static uint32_t screenWriteCount = 0;
-    if (addr >= 0x9C40 && addr < 0xA000 && screenWriteCount < 30) {
-      static const char* TAG = "SCREEN";
-      PlatformManager::getInstance().log(LOG_INFO, TAG, "Write screen $%04X = $%02X '%c'",
-          addr, val, (val >= 0x20 && val < 0x7F) ? (val) : '.');
-      screenWriteCount++;
-    }
     ram[addr] = val;
     return;
   }
