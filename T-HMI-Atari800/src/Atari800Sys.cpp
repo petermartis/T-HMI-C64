@@ -153,9 +153,21 @@ uint8_t Atari800Sys::getMem(uint16_t addr) {
     if (basicRomEnabled && basicRom) {
       uint8_t val = basicRom[addr - 0xA000];
 
-      // NOTE: Altirra BASIC uses 65C02/illegal opcodes that our 6502 emulator
-      // doesn't support. You MUST use original Atari BASIC ROM instead.
-      // Run: cd src/roms/original && python3 convert_roms.py ATARIXL.ROM ATARIBAS.ROM
+      // Patch BASIC ROM RUN vector to $A000 if it's wrong
+      // Some ROM dumps have RUN=$0500 instead of $A000
+      if (addr == 0xBFFD) {
+        uint8_t runHi = basicRom[0x1FFD];
+        if (runHi != 0xA0) {
+          static bool patchLogged = false;
+          if (!patchLogged) {
+            static const char* TAG = "BASIC";
+            PlatformManager::getInstance().log(LOG_WARN, TAG,
+                "Patching RUN vector: $%02X00 -> $A000", runHi);
+            patchLogged = true;
+          }
+          return 0xA0;  // Return correct RUN_HI for BASIC cold start
+        }
+      }
 
       // Debug: log reads of cartridge vectors ($BFFA-$BFFF)
       static uint8_t cartVecReadCount = 0;
