@@ -29,6 +29,7 @@
 #include <WiFi.h>
 #include <cctype>
 #include <set>
+#include <lwip/tcpip.h>  // For LOCK_TCPIP_CORE
 
 // html/css/javascript web keyboard
 #include "htmlcode.h"
@@ -590,6 +591,8 @@ void WebKB::startCaptivePortalServer() {
                                      "Wifi access point ip adress: %s",
                                      WiFi.softAPIP().toString());
 
+  // Lock TCPIP core for network operations
+  LOCK_TCPIP_CORE();
   dns_server.start(53, "*", WiFi.softAPIP());
 
   server->on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
@@ -623,6 +626,7 @@ void WebKB::startCaptivePortalServer() {
   });
 
   server->begin();
+  UNLOCK_TCPIP_CORE();
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Captive portal server started");
 }
 
@@ -659,6 +663,9 @@ void WebKB::connectToWiFi(const String &ssid, const String &pass) {
 
 void WebKB::startWebServer() {
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting web server...");
+
+  // Lock TCPIP core for network operations
+  LOCK_TCPIP_CORE();
 
   ws = new AsyncWebSocket("/ws");
 
@@ -815,6 +822,7 @@ void WebKB::startWebServer() {
   });
 
   server->begin();
+  UNLOCK_TCPIP_CORE();
 
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Webserver started.");
 }
