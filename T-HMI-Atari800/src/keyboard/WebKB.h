@@ -111,6 +111,7 @@ private:
   std::atomic<uint8_t> consoleKeys{0};         // Start/Select/Option
   uint8_t extCmdBuffer[1024];
   bool shiftlock = false;
+  String lastUploadedFile;  // For file upload handling
   std::queue<CodeTriple> eventQueue;
   SemaphoreHandle_t queueSem;
   ActiveKey currentKey;

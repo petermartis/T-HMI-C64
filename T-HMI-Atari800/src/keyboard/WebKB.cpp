@@ -663,8 +663,9 @@ void WebKB::startWebServer() {
   server->on("/upload", HTTP_POST,
     // Request handler (called after upload completes)
     [this](AsyncWebServerRequest *request) {
-      if (request->hasParam("success", true)) {
-        String filename = request->getParam("success", true)->value();
+      if (lastUploadedFile.length() > 0) {
+        String filename = lastUploadedFile;
+        lastUploadedFile = "";  // Clear for next upload
         request->send(200, "application/json", "{\"status\":\"ok\",\"file\":\"" + filename + "\"}");
 
         // Determine action based on file extension
@@ -712,7 +713,7 @@ void WebKB::startWebServer() {
           uploadFile.close();
           PlatformManager::getInstance().log(LOG_INFO, TAG, "Upload finished: %s (%d bytes)", filename.c_str(), index + len);
           // Store filename for the request handler
-          request->addParam(new AsyncWebParameter("success", filepath, true));
+          lastUploadedFile = filepath;
         }
       }
     }
