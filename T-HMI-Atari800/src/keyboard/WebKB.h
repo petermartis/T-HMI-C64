@@ -114,6 +114,13 @@ private:
   bool shiftlock = false;
   String lastUploadedFile;  // For file upload handling
 
+  // Deferred WiFi initialization (must start from Core 1)
+  std::atomic<bool> wifiInitPending{false};
+  std::atomic<bool> pendingWebServerStart{false};
+  bool serverStarted{false};
+  String storedSSID;
+  String storedPASS;
+
   std::queue<CodeTriple> eventQueue;
   SemaphoreHandle_t queueSem;
   ActiveKey currentKey;

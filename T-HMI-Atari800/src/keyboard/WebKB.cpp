@@ -511,7 +511,7 @@ void WebKB::init() {
   currentKey.active = false;
   currentKey.holdTicks = 0;
 
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Init Wifi");
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Init Wifi (setup only, server deferred to Core 1)");
 
   // create webserver instance
   server = new AsyncWebServer(port);
@@ -522,21 +522,18 @@ void WebKB::init() {
       PlatformManager::getInstance().log(LOG_INFO, TAG,
                                          "Wifi connected. IP address: %s",
                                          WiFi.localIP().toString());
-      startOneShotTimer([this]() { this->printIPAddress(); }, 4000);
-      startWebServer();
+      // Defer web server start to Core 1 task
+      pendingWebServerStart.store(true);
     }
   });
 
   prefs.begin("wifi", true);
-  String storedSSID = prefs.getString("ssid", "");
-  String storedPASS = prefs.getString("pass", "");
+  storedSSID = prefs.getString("ssid", "");
+  storedPASS = prefs.getString("pass", "");
   prefs.end();
 
-  if (storedSSID.length()) {
-    connectToWiFi(storedSSID, storedPASS);
-  } else {
-    startCaptivePortal();
-  }
+  // WiFi will be started from processDeferredOperations() on Core 1
+  wifiInitPending.store(true);
 
   // start with joystickmode 2 at startup
   extCmdBuffer[0] =
@@ -610,6 +607,7 @@ void WebKB::startCaptivePortal() {
   });
 
   server->begin();
+  serverStarted = true;
   PlatformManager::getInstance().log(LOG_INFO, TAG, "Captive portal server started");
 }
 
@@ -1026,8 +1024,33 @@ void WebKB::processSingleKey(const char *type, const char *keyId, bool shift,
 }
 
 bool WebKB::processDeferredOperations() {
-  // WiFi server is started directly in init(), so nothing deferred
-  return true;
+  // This runs on Core 1 (Arduino loop) where TCPIP core operations are allowed
+
+  // Step 1: Initialize WiFi if pending (deferred from init())
+  if (wifiInitPending.load()) {
+    wifiInitPending.store(false);
+    PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting WiFi from Core 1...");
+
+    if (storedSSID.length()) {
+      // Try to connect to stored WiFi
+      connectToWiFi(storedSSID, storedPASS);
+    } else {
+      // Start captive portal
+      startCaptivePortal();
+    }
+    return false;  // Still processing
+  }
+
+  // Step 2: Start web server if pending (after STA connection)
+  if (pendingWebServerStart.load()) {
+    pendingWebServerStart.store(false);
+    startOneShotTimer([this]() { this->printIPAddress(); }, 4000);
+    startWebServer();
+    serverStarted = true;
+    return true;
+  }
+
+  return serverStarted;
 }
 
 void WebKB::scanKeyboard() {
