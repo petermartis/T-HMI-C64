@@ -258,6 +258,30 @@ void Atari800Sys::setMem(uint16_t addr, uint8_t val) {
   if (addr < 0xA000) {
     // Low RAM ($0000-$9FFF)
 
+    // Force DOSVEC to BASIC cold start ($A000) when OS tries to set default ($F223)
+    // The XL OS sets DOSVEC to $F223 early in boot but doesn't update it for BASIC
+    // We intercept this and force it to $A000 when BASIC ROM is enabled
+    if (addr == 0x000A && val == 0x23 && basicRomEnabled) {
+      static bool dosvecPatchLogged = false;
+      if (!dosvecPatchLogged) {
+        static const char* TAG = "DOSVEC";
+        PlatformManager::getInstance().log(LOG_WARN, TAG,
+            "Forcing DOSVEC_LO: $23 -> $00 (BASIC @ $A000)");
+        dosvecPatchLogged = true;
+      }
+      val = 0x00;  // BASIC cold start at $A000
+    }
+    if (addr == 0x000B && val == 0xF2 && basicRomEnabled) {
+      static bool dosvecHiPatchLogged = false;
+      if (!dosvecHiPatchLogged) {
+        static const char* TAG = "DOSVEC";
+        PlatformManager::getInstance().log(LOG_WARN, TAG,
+            "Forcing DOSVEC_HI: $F2 -> $A0 (BASIC @ $A000)");
+        dosvecHiPatchLogged = true;
+      }
+      val = 0xA0;  // BASIC cold start at $A000
+    }
+
     // Debug: trace writes to DOSVEC ($000A-$000B) and DOSINI ($000C-$000D)
     static uint8_t vecWriteCount = 0;
     if (addr >= 0x000A && addr <= 0x000D && vecWriteCount < 40) {
