@@ -214,10 +214,8 @@ void Atari800Emu::loop() {
     PlatformManager::getInstance().log(LOG_INFO, TAG, "loop() #%lu, refreshs=%d", loopCount, sys.antic.cntRefreshs.load());
   }
 
-  // Process deferred keyboard operations (like web server start) from main task context
-  if (sys.keyboard) {
-    sys.keyboard->processDeferredOperations();
-  }
+  // Note: processDeferredOperations() is called from Arduino loop() on core 1
+  // for proper TCPIP core access. Do not call it here (core 0).
 
   // Handle pending file load requests
   if (loadFileRequested.load()) {

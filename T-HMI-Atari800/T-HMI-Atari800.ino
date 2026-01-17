@@ -94,9 +94,16 @@ void setup() {
 }
 
 /**
- * @brief Arduino loop function (runs on core 1, mostly idle)
+ * @brief Arduino loop function (runs on core 1)
+ *
+ * This handles WiFi/network operations that require proper TCPIP core access.
+ * The main emulation runs on core 0, but network operations must run here.
  */
 void loop() {
-  // Main loop is empty - all work happens in core0Task
-  vTaskDelay(pdMS_TO_TICKS(1000));
+  // Process deferred WiFi operations from the correct task context
+  if (atari800Emu.sys.keyboard) {
+    atari800Emu.sys.keyboard->processDeferredOperations();
+  }
+
+  vTaskDelay(pdMS_TO_TICKS(10));  // Check every 10ms
 }
