@@ -95,15 +95,15 @@ install-core:
 	$(ARDUINO_CLI) core update-index
 	$(ARDUINO_CLI) core install $(ESP32_CORE_VERSION)
 
-# Install required libraries
+# Install required libraries (use same versions as T-HMI-C64 for ESP-IDF 5.x compatibility)
 install-libs:
 	@echo "Installing required libraries..."
-	$(ARDUINO_CLI) lib install "ESPAsyncWebServer-esphome"
-	$(ARDUINO_CLI) lib install "AsyncTCP"
 	$(ARDUINO_CLI) lib install "ArduinoJson"
-	@echo "Installing ESPAsyncDNSServer from GitHub..."
-	$(ARDUINO_CLI) lib install --git-url https://github.com/devyte/ESPAsyncDNSServer.git || \
-		(mkdir -p ~/Arduino/libraries && cd ~/Arduino/libraries && git clone https://github.com/devyte/ESPAsyncDNSServer.git 2>/dev/null || true)
+	$(ARDUINO_CLI) config set library.enable_unsafe_install true
+	@echo "Installing ESP32Async libraries from GitHub (ESP-IDF 5.x compatible)..."
+	$(ARDUINO_CLI) lib install --git-url https://github.com/ESP32Async/AsyncTCP.git
+	$(ARDUINO_CLI) lib install --git-url https://github.com/ESP32Async/ESPAsyncWebServer.git
+	$(ARDUINO_CLI) lib install --git-url https://github.com/devyte/ESPAsyncDNSServer.git
 	@echo "Libraries installed."
 
 # Compile the project
