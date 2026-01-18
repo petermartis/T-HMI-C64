@@ -522,8 +522,16 @@ void WebKB::init() {
       PlatformManager::getInstance().log(LOG_INFO, TAG,
                                          "Wifi connected. IP address: %s",
                                          WiFi.localIP().toString());
-      // Defer web server start to Core 1 task
-      pendingWebServerStart.store(true);
+      // Start web server via timer since Arduino loop is starved by CPU task
+      // Timer callback runs independently and can safely start the server
+      if (!serverStarted) {
+        startOneShotTimer([this]() {
+          PlatformManager::getInstance().log(LOG_INFO, TAG, "Timer: Starting web server...");
+          this->startWebServer();
+          this->serverStarted = true;
+          startOneShotTimer([this]() { this->printIPAddress(); }, 2000);
+        }, 100);  // Small delay to ensure TCPIP stack is ready
+      }
     }
   });
 
