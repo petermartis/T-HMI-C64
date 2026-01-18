@@ -625,81 +625,26 @@ void WebKB::startCaptivePortal() {
 
 
 void WebKB::connectToWiFi(const String &ssid, const String &pass) {
+  // NON-BLOCKING WiFi connection
+  // The CPU emulator task starves blocking loops on Core 1, so we must
+  // rely entirely on the WiFi event callback to detect connection and start the server.
 
   PlatformManager::getInstance().log(
-      LOG_INFO, TAG, "Trying to connect to ssid %s", ssid.c_str());
+      LOG_INFO, TAG, "Starting non-blocking WiFi connection to ssid %s", ssid.c_str());
 
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Setting WIFI_STA mode...");
   WiFi.mode(WIFI_STA);
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "WIFI_STA mode set, delaying 100ms...");
-  delay(100);
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Calling WiFi.begin()...");
   WiFi.begin(ssid.c_str(), pass.c_str());
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "WiFi.begin() returned, entering loop...");
 
-  int attempts = 0;
-  const int maxAttempts = 40; // 20 seconds total
-  wl_status_t status;
+  // Store credentials for fallback check
+  connectingSSID = ssid;
 
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "First status check...");
-  status = WiFi.status();
-  PlatformManager::getInstance().log(LOG_INFO, TAG, "Initial status=%d", status);
+  // Set a timeout - if not connected within 30 seconds, start captive portal
+  // This will be checked in processDeferredOperations()
+  wifiConnectStartTime = millis();
+  wifiConnecting = true;
 
-  while (attempts < maxAttempts) {
-    status = WiFi.status();
-
-    // Log every iteration for debugging
-    if (attempts < 5 || attempts % 10 == 0) {
-      PlatformManager::getInstance().log(LOG_INFO, TAG,
-          "Loop iter %d: status=%d", attempts, status);
-    }
-
-    // Check if connected
-    if (status == WL_CONNECTED) {
-      PlatformManager::getInstance().log(LOG_INFO, TAG,
-          "WiFi connected on attempt %d, status=%d", attempts, status);
-      break;
-    }
-
-    // Check for failure states
-    if (status == WL_CONNECT_FAILED || status == WL_NO_SSID_AVAIL) {
-      PlatformManager::getInstance().log(LOG_INFO, TAG,
-          "WiFi connection failed early: status=%d", status);
-      break;
-    }
-
-    delay(500);
-    attempts++;
-  }
-
-  // Final status check
-  status = WiFi.status();
   PlatformManager::getInstance().log(LOG_INFO, TAG,
-      "WiFi loop exited: status=%d, attempts=%d, IP=%s",
-      status, attempts, WiFi.localIP().toString().c_str());
-
-  if (status == WL_CONNECTED) {
-    PlatformManager::getInstance().log(
-        LOG_INFO, TAG, "Connection to ssid %s established. IP: %s",
-        ssid.c_str(), WiFi.localIP().toString().c_str());
-
-    // Clear any pending flag since we're starting directly
-    pendingWebServerStart.store(false);
-
-    // Start web server directly here
-    startOneShotTimer([this]() { this->printIPAddress(); }, 4000);
-    startWebServer();
-    serverStarted = true;
-  } else {
-    PlatformManager::getInstance().log(LOG_INFO, TAG,
-        "Connection to ssid %s failed (status=%d). Starting captive portal.",
-        ssid.c_str(), status);
-    WiFi.disconnect(true);
-    delay(500);
-    WiFi.mode(WIFI_OFF);
-    delay(500);
-    startCaptivePortal();
-  }
+      "WiFi.begin() called, connection will complete via event callback");
 }
 
 void WebKB::startWebServer() {
@@ -1084,6 +1029,7 @@ void WebKB::processSingleKey(const char *type, const char *keyId, bool shift,
 
 bool WebKB::processDeferredOperations() {
   // This runs on Core 1 (Arduino loop) where TCPIP core operations are allowed
+  // IMPORTANT: This function must be non-blocking as the CPU task starves Core 1
 
   // Step 1: Initialize WiFi if pending (deferred from init())
   if (wifiInitPending.load()) {
@@ -1091,22 +1037,43 @@ bool WebKB::processDeferredOperations() {
     PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting WiFi from Core 1...");
 
     if (storedSSID.length()) {
-      // Try to connect to stored WiFi
+      // Try to connect to stored WiFi (non-blocking, returns immediately)
       connectToWiFi(storedSSID, storedPASS);
-      // After connectToWiFi returns, check if we need to start the web server
-      // The WiFi event callback should have set pendingWebServerStart
-      PlatformManager::getInstance().log(LOG_INFO, TAG, "connectToWiFi returned, pendingWebServerStart=%d", pendingWebServerStart.load());
     } else {
-      // Start captive portal
+      // No stored credentials - start captive portal
       startCaptivePortal();
     }
     return false;  // Still processing
   }
 
-  // Step 2: Start web server if pending (after STA connection)
+  // Step 2: Check WiFi connection timeout (for non-blocking connection)
+  if (wifiConnecting && !serverStarted) {
+    unsigned long elapsed = millis() - wifiConnectStartTime;
+
+    // Check if connected via WiFi.status() (backup check)
+    if (WiFi.status() == WL_CONNECTED && !pendingWebServerStart.load()) {
+      PlatformManager::getInstance().log(LOG_INFO, TAG,
+          "WiFi connected (status check). IP: %s", WiFi.localIP().toString().c_str());
+      wifiConnecting = false;
+      pendingWebServerStart.store(true);
+    }
+    // Timeout after 30 seconds - fall back to captive portal
+    else if (elapsed > 30000) {
+      PlatformManager::getInstance().log(LOG_INFO, TAG,
+          "WiFi connection timeout after %lu ms. Starting captive portal.", elapsed);
+      wifiConnecting = false;
+      WiFi.disconnect(true);
+      WiFi.mode(WIFI_OFF);
+      startCaptivePortal();
+      return false;
+    }
+  }
+
+  // Step 3: Start web server if pending (triggered by WiFi event callback)
   if (pendingWebServerStart.load()) {
     PlatformManager::getInstance().log(LOG_INFO, TAG, "Starting web server (deferred)...");
     pendingWebServerStart.store(false);
+    wifiConnecting = false;
     startOneShotTimer([this]() { this->printIPAddress(); }, 4000);
     startWebServer();
     serverStarted = true;

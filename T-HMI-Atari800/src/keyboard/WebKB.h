@@ -121,6 +121,11 @@ private:
   String storedSSID;
   String storedPASS;
 
+  // Non-blocking WiFi connection state
+  bool wifiConnecting{false};
+  unsigned long wifiConnectStartTime{0};
+  String connectingSSID;
+
   std::queue<CodeTriple> eventQueue;
   SemaphoreHandle_t queueSem;
   ActiveKey currentKey;
