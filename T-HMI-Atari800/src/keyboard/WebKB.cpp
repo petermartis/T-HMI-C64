@@ -629,16 +629,30 @@ void WebKB::connectToWiFi(const String &ssid, const String &pass) {
   PlatformManager::getInstance().log(
       LOG_INFO, TAG, "Trying to connect to ssid %s", ssid.c_str());
 
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Setting WIFI_STA mode...");
   WiFi.mode(WIFI_STA);
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "WIFI_STA mode set, delaying 100ms...");
   delay(100);
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Calling WiFi.begin()...");
   WiFi.begin(ssid.c_str(), pass.c_str());
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "WiFi.begin() returned, entering loop...");
 
   int attempts = 0;
   const int maxAttempts = 40; // 20 seconds total
   wl_status_t status;
 
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "First status check...");
+  status = WiFi.status();
+  PlatformManager::getInstance().log(LOG_INFO, TAG, "Initial status=%d", status);
+
   while (attempts < maxAttempts) {
     status = WiFi.status();
+
+    // Log every iteration for debugging
+    if (attempts < 5 || attempts % 10 == 0) {
+      PlatformManager::getInstance().log(LOG_INFO, TAG,
+          "Loop iter %d: status=%d", attempts, status);
+    }
 
     // Check if connected
     if (status == WL_CONNECTED) {
@@ -656,13 +670,6 @@ void WebKB::connectToWiFi(const String &ssid, const String &pass) {
 
     delay(500);
     attempts++;
-
-    // Log progress every 5 seconds
-    if (attempts % 10 == 0) {
-      PlatformManager::getInstance().log(LOG_INFO, TAG,
-          "WiFi connecting... attempt %d/%d, status=%d",
-          attempts, maxAttempts, status);
-    }
   }
 
   // Final status check
