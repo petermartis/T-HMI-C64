@@ -627,7 +627,7 @@ void WebKB::startCaptivePortal() {
 void WebKB::connectToWiFi(const String &ssid, const String &pass) {
 
   PlatformManager::getInstance().log(
-      LOG_INFO, TAG, "Trying to connect to ssid %s %s", ssid.c_str());
+      LOG_INFO, TAG, "Trying to connect to ssid %s", ssid.c_str());
 
   WiFi.mode(WIFI_STA);
   delay(100);
@@ -641,14 +641,18 @@ void WebKB::connectToWiFi(const String &ssid, const String &pass) {
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-
     PlatformManager::getInstance().log(
-        LOG_INFO, TAG, "Connection to ssid %s established.", ssid);
+        LOG_INFO, TAG, "Connection to ssid %s established. IP: %s",
+        ssid.c_str(), WiFi.localIP().toString().c_str());
 
+    // Start web server directly here instead of deferring
+    startOneShotTimer([this]() { this->printIPAddress(); }, 4000);
+    startWebServer();
+    serverStarted = true;
   } else {
 
     PlatformManager::getInstance().log(LOG_INFO, TAG,
-                                       "Connection to ssid %s failed.", ssid);
+                                       "Connection to ssid %s failed.", ssid.c_str());
     WiFi.mode(WIFI_OFF);
     delay(1000);
     startCaptivePortal();
