@@ -825,42 +825,50 @@ void WebKB::handleWebsocketMessage(void *arg, uint8_t *data, size_t len) {
   if (info->opcode != WS_TEXT)
     return;
 
-  // parse JSON
-  JsonDocument doc;
+  // parse JSON - use StaticJsonDocument for speed (no heap allocation)
+  StaticJsonDocument<128> doc;
   DeserializationError err = deserializeJson(doc, data, len);
   if (err)
     return;
 
-  // debug log
-  String jsonStr;
-  serializeJson(doc, jsonStr);
-  PlatformManager::getInstance().log(LOG_DEBUG, TAG, jsonStr.c_str());
+  const char *type = nullptr;
+  const char *ch = nullptr;
+  bool shift = false;
+  bool ctrl = false;
+  bool comm = false;
 
-  // return, if type is missing
-  const char *type = doc["type"] | "";
-  if (strlen(type) == 0)
-    return;
+  // Check for new minimal format: {"t":"d","k":"a","m":0}
+  if (doc.containsKey("t")) {
+    const char *t = doc["t"] | "";
+    if (t[0] == 'd') type = "key-down";
+    else if (t[0] == 'u') type = "key-up";
+    else return;
 
-  if (!doc["keys"].is<JsonObject>())
-    return;
+    ch = doc["k"] | "";
+    int m = doc["m"] | 0;
+    shift = (m & 1) != 0;
+    ctrl = (m & 2) != 0;
+  }
+  // Fall back to old format: {"type":"key-down","keys":{...}}
+  else {
+    type = doc["type"] | "";
+    if (strlen(type) == 0)
+      return;
 
-  JsonObject keyObj = doc["keys"];
+    if (!doc["keys"].is<JsonObject>())
+      return;
 
-  // read chars
-  const char *ch = keyObj["chars"];
+    JsonObject keyObj = doc["keys"];
+    ch = keyObj["chars"];
+    shift = keyObj["modifiers"]["shift"] | false;
+    ctrl = keyObj["modifiers"]["ctrl"] | false;
+    comm = keyObj["modifiers"]["commodore"] | false;
+  }
 
   // check if chars exist
   if (ch != nullptr && ch[0] != '\0') {
-
-    bool shift = keyObj["modifiers"]["shift"] | false;
-    bool ctrl = keyObj["modifiers"]["ctrl"] | false;
-    bool comm = keyObj["modifiers"]["commodore"] | false;
-
     char buffer[32];
     snprintf(buffer, sizeof(buffer), "char:%s", ch);
-    PlatformManager::getInstance().log(LOG_DEBUG, TAG, "Searching key %s",
-                                       buffer);
-
     processSingleKey(type, buffer, shift, ctrl, comm);
   }
 }

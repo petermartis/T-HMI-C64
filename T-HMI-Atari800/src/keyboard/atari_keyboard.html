@@ -32,66 +32,65 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 10px;
+            padding: 18px;
             user-select: none;
         }
 
         h2 {
             color: #e0e0e0;
-            margin: 10px 0;
-            font-size: 18px;
+            margin: 18px 0;
+            font-size: 32px;
             text-align: center;
         }
 
         .keyboard-container {
             display: flex;
-            gap: 15px;
+            gap: 26px;
             align-items: flex-start;
             max-width: 100%;
         }
 
         .main-keyboard {
             background: #2d2d44;
-            padding: 12px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            padding: 21px;
+            border-radius: 18px;
+            box-shadow: 0 7px 26px rgba(0,0,0,0.4);
         }
 
         /* Console keys panel - matches Atari 800 XL right side */
         .console-panel {
             background: #1a1a1a;
-            padding: 8px 12px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            padding: 14px 21px;
+            border-radius: 14px;
+            box-shadow: 0 7px 26px rgba(0,0,0,0.4);
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 14px;
         }
 
         .console-row {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 14px;
         }
 
         /* Metallic silver button style like real Atari */
         .console-btn {
-            width: 44px;
-            height: 38px;
+            width: 77px;
+            height: 67px;
             background: linear-gradient(180deg,
                 #9a9a9a 0%,
                 #808080 20%,
                 #707070 50%,
                 #606060 80%,
                 #505050 100%);
-            border: 1px solid #444;
-            border-radius: 3px;
+            border: 2px solid #444;
+            border-radius: 5px;
             cursor: pointer;
-            transition: all 0.1s;
             box-shadow:
-                inset 0 1px 0 rgba(255,255,255,0.3),
-                inset 0 -1px 0 rgba(0,0,0,0.3),
-                0 2px 4px rgba(0,0,0,0.5);
+                inset 0 2px 0 rgba(255,255,255,0.3),
+                inset 0 -2px 0 rgba(0,0,0,0.3),
+                0 4px 7px rgba(0,0,0,0.5);
         }
 
         .console-btn:active, .console-btn.active {
@@ -101,11 +100,11 @@
                 #505050 50%,
                 #454545 80%,
                 #404040 100%);
-            transform: translateY(1px);
+            transform: translateY(2px);
             box-shadow:
-                inset 0 1px 0 rgba(255,255,255,0.2),
-                inset 0 -1px 0 rgba(0,0,0,0.2),
-                0 1px 2px rgba(0,0,0,0.5);
+                inset 0 2px 0 rgba(255,255,255,0.2),
+                inset 0 -2px 0 rgba(0,0,0,0.2),
+                0 2px 4px rgba(0,0,0,0.5);
         }
 
         /* Toggle button held state - golden glow */
@@ -117,18 +116,18 @@
                 #806000 80%,
                 #705000 100%);
             box-shadow:
-                inset 0 1px 0 rgba(255,255,255,0.3),
-                inset 0 -1px 0 rgba(0,0,0,0.3),
-                0 0 8px rgba(255,200,0,0.6),
-                0 2px 4px rgba(0,0,0,0.5);
+                inset 0 2px 0 rgba(255,255,255,0.3),
+                inset 0 -2px 0 rgba(0,0,0,0.3),
+                0 0 14px rgba(255,200,0,0.6),
+                0 4px 7px rgba(0,0,0,0.5);
         }
 
         .console-label {
             color: #e0e0e0;
-            font-size: 11px;
+            font-size: 19px;
             font-weight: bold;
-            letter-spacing: 1px;
-            min-width: 55px;
+            letter-spacing: 2px;
+            min-width: 96px;
             text-align: left;
         }
 
@@ -138,66 +137,65 @@
 
         .row {
             display: flex;
-            gap: 4px;
+            gap: 7px;
             justify-content: center;
-            margin-bottom: 4px;
+            margin-bottom: 7px;
         }
 
         .key {
             background: linear-gradient(180deg, #4a4a5e 0%, #3a3a4e 100%);
-            border: 1px solid #555;
-            border-radius: 5px;
+            border: 2px solid #555;
+            border-radius: 9px;
             color: #fff;
-            font-size: 11px;
+            font-size: 19px;
             font-weight: bold;
-            min-width: 36px;
-            height: 36px;
+            min-width: 63px;
+            height: 63px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.1s;
             text-transform: uppercase;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 7px rgba(0,0,0,0.3);
         }
 
         .key:active, .key.active {
             background: linear-gradient(180deg, #6a6a8e 0%, #5a5a7e 100%);
-            transform: translateY(1px);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
         .key .shift-char {
-            font-size: 9px;
+            font-size: 16px;
             color: #aaa;
         }
 
         .key .main-char {
-            font-size: 12px;
+            font-size: 21px;
         }
 
         /* Special key widths */
-        .key-esc { min-width: 42px; }
-        .key-tab { min-width: 54px; }
-        .key-ctrl { min-width: 60px; }
-        .key-shift { min-width: 72px; }
-        .key-shift-r { min-width: 72px; }
-        .key-space { min-width: 200px; }
-        .key-return { min-width: 60px; height: 36px; }
-        .key-break { min-width: 50px; background: linear-gradient(180deg, #8b4513 0%, #6b3503 100%); }
-        .key-caps { min-width: 50px; }
-        .key-del { min-width: 60px; font-size: 9px; }
+        .key-esc { min-width: 74px; }
+        .key-tab { min-width: 95px; }
+        .key-ctrl { min-width: 105px; }
+        .key-shift { min-width: 126px; }
+        .key-shift-r { min-width: 126px; }
+        .key-space { min-width: 350px; }
+        .key-return { min-width: 105px; height: 63px; }
+        .key-break { min-width: 88px; background: linear-gradient(180deg, #8b4513 0%, #6b3503 100%); }
+        .key-caps { min-width: 88px; }
+        .key-del { min-width: 105px; font-size: 16px; }
 
         /* Atari logo/inverse key */
         .key-atari {
-            min-width: 42px;
+            min-width: 74px;
             background: linear-gradient(180deg, #5a5a7e 0%, #4a4a6e 100%);
         }
 
         .atari-logo {
-            width: 16px;
-            height: 16px;
+            width: 28px;
+            height: 28px;
             position: relative;
         }
 
@@ -206,35 +204,35 @@
             position: absolute;
             width: 0;
             height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-bottom: 14px solid #fff;
-            top: 1px;
+            border-left: 14px solid transparent;
+            border-right: 14px solid transparent;
+            border-bottom: 25px solid #fff;
+            top: 2px;
             left: 0;
         }
 
         /* Utility buttons area */
         .util-keys {
             background: #2d2d44;
-            padding: 10px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            margin-top: 10px;
+            padding: 18px;
+            border-radius: 18px;
+            box-shadow: 0 7px 26px rgba(0,0,0,0.4);
+            margin-top: 18px;
             display: flex;
-            gap: 8px;
+            gap: 14px;
             justify-content: center;
             flex-wrap: wrap;
         }
 
         .util-key {
             background: linear-gradient(180deg, #3a5a3a 0%, #2a4a2a 100%);
-            border: 1px solid #4a6a4a;
-            border-radius: 5px;
+            border: 2px solid #4a6a4a;
+            border-radius: 9px;
             color: #fff;
-            font-size: 11px;
+            font-size: 19px;
             font-weight: bold;
-            min-width: 60px;
-            height: 32px;
+            min-width: 105px;
+            height: 56px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -248,9 +246,9 @@
         /* Special combo buttons */
         .combo-key {
             background: linear-gradient(180deg, #5a3a5a 0%, #4a2a4a 100%);
-            border: 1px solid #6a4a6a;
-            min-width: 100px;
-            font-size: 10px;
+            border: 2px solid #6a4a6a;
+            min-width: 175px;
+            font-size: 18px;
         }
 
         .combo-key:active, .combo-key.active {
@@ -260,32 +258,32 @@
         /* Help text */
         .help-text {
             color: #888;
-            font-size: 11px;
-            margin-top: 15px;
+            font-size: 19px;
+            margin-top: 26px;
             text-align: center;
-            max-width: 700px;
+            max-width: 1225px;
         }
 
         .help-text ul {
             list-style: none;
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 18px;
             justify-content: center;
-            margin-top: 8px;
+            margin-top: 14px;
         }
 
         .help-text li {
             background: #2d2d44;
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 7px 14px;
+            border-radius: 7px;
         }
 
         .help-section {
-            margin-top: 10px;
-            padding: 8px;
+            margin-top: 18px;
+            padding: 14px;
             background: #252540;
-            border-radius: 6px;
+            border-radius: 11px;
         }
 
         .help-section strong {
@@ -295,10 +293,10 @@
         /* Status indicator */
         #status {
             position: fixed;
-            top: 5px;
-            right: 5px;
-            width: 12px;
-            height: 12px;
+            top: 9px;
+            right: 9px;
+            width: 21px;
+            height: 21px;
             border-radius: 50%;
             background: #f00;
         }
@@ -310,10 +308,10 @@
         /* Hold indicator */
         .hold-status {
             position: fixed;
-            top: 5px;
-            left: 5px;
+            top: 9px;
+            left: 9px;
             color: #ffd700;
-            font-size: 11px;
+            font-size: 19px;
             font-weight: bold;
             display: none;
         }
@@ -326,7 +324,7 @@
 <body>
     <div id="status"></div>
     <div id="holdStatus" class="hold-status">HELD: <span id="heldKeys"></span></div>
-    <h2>Atari 800 XL Keyboard</h2>
+    <h2>Atari 800 XL</h2>
 
     <div class="keyboard-container">
         <div class="main-keyboard">
@@ -443,295 +441,177 @@
     </div>
 
     <div class="help-text">
-        <ul>
-            <li>Arrow keys: ← → ↑ ↓</li>
-            <li>BREAK = NMI</li>
-            <li>▲ = INVERSE (Atari logo key)</li>
-        </ul>
         <div class="help-section">
-            <strong>Toggle Keys:</strong> Click OPTION or START to hold them down (turns gold).<br>
-            Click again to release. Use with RESET for boot combinations.
+            <strong>Toggle:</strong> Click OPTION/START to hold (gold). Click RESET for boot combos.
         </div>
     </div>
 
     <script>
+        // Optimized for low latency
         let ws;
-        let modifiers = { shift: false, ctrl: false };
-        let heldKeys = {}; // Toggle keys that are held
+        let mod = 0; // Bitmask: 1=shift, 2=ctrl
+        let held = {}; // Toggle keys
 
-        // Map physical keyboard codes to web button elements
-        const physicalKeyMap = {};
+        // Pre-build key map at load time
+        const keyMap = {};
+
+        function init() {
+            document.querySelectorAll('.key, .console-btn').forEach(el => {
+                const p = el.dataset.physical;
+                if (p) keyMap[p] = el;
+                const k = el.dataset.key;
+                if (k) keyMap[k.toLowerCase()] = el;
+            });
+        }
 
         function connect() {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-
-            ws.onopen = () => {
-                document.getElementById('status').classList.add('connected');
-                console.log('WebSocket connected');
-            };
-
-            ws.onclose = () => {
-                document.getElementById('status').classList.remove('connected');
-                console.log('WebSocket disconnected, reconnecting...');
-                setTimeout(connect, 2000);
-            };
-
-            ws.onerror = (e) => {
-                console.error('WebSocket error:', e);
-            };
+            const p = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${p}//${location.host}/ws`);
+            ws.onopen = () => document.getElementById('status').className = 'connected';
+            ws.onclose = () => { document.getElementById('status').className = ''; setTimeout(connect, 2000); };
         }
 
-        function sendKey(type, key) {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                const msg = {
-                    type: type,
-                    keys: {
-                        chars: key,
-                        modifiers: {
-                            shift: modifiers.shift,
-                            ctrl: modifiers.ctrl,
-                            commodore: false
-                        }
-                    }
-                };
-                ws.send(JSON.stringify(msg));
+        // Minimal JSON for speed: {"t":"d","k":"a","m":0}
+        // t = type (d=down, u=up), k = key, m = modifiers bitmask
+        function send(type, key) {
+            if (ws && ws.readyState === 1) {
+                ws.send(`{"t":"${type}","k":"${key}","m":${mod}}`);
             }
         }
 
-        function updateHeldStatus() {
-            const heldNames = Object.keys(heldKeys).filter(k => heldKeys[k]);
-            const statusEl = document.getElementById('holdStatus');
-            const keysEl = document.getElementById('heldKeys');
-            if (heldNames.length > 0) {
-                keysEl.textContent = heldNames.join(' + ');
-                statusEl.classList.add('visible');
+        function updateHeld() {
+            const names = Object.keys(held).filter(k => held[k]);
+            const el = document.getElementById('holdStatus');
+            if (names.length) {
+                document.getElementById('heldKeys').textContent = names.join('+');
+                el.className = 'hold-status visible';
             } else {
-                statusEl.classList.remove('visible');
+                el.className = 'hold-status';
             }
         }
 
-        function handleKeyDown(element) {
-            const key = element.dataset.key;
-            const modifier = element.dataset.modifier;
-            const isToggle = element.dataset.toggle === 'true';
+        function keyDown(el) {
+            const k = el.dataset.key;
+            const m = el.dataset.modifier;
+            const tog = el.dataset.toggle === 'true';
 
-            // Toggle keys work differently
-            if (isToggle) {
-                if (heldKeys[key]) {
-                    // Release
-                    heldKeys[key] = false;
-                    element.classList.remove('held');
-                    const label = document.getElementById('label' + key);
-                    if (label) label.classList.remove('held-label');
-                    sendKey('key-up', key);
+            if (tog) {
+                if (held[k]) {
+                    held[k] = false;
+                    el.classList.remove('held');
+                    const lbl = document.getElementById('label' + k);
+                    if (lbl) lbl.classList.remove('held-label');
+                    send('u', k);
                 } else {
-                    // Hold
-                    heldKeys[key] = true;
-                    element.classList.add('held');
-                    const label = document.getElementById('label' + key);
-                    if (label) label.classList.add('held-label');
-                    sendKey('key-down', key);
+                    held[k] = true;
+                    el.classList.add('held');
+                    const lbl = document.getElementById('label' + k);
+                    if (lbl) lbl.classList.add('held-label');
+                    send('d', k);
                 }
-                updateHeldStatus();
+                updateHeld();
                 return;
             }
 
-            element.classList.add('active');
-
-            if (modifier) {
-                modifiers[modifier] = true;
-                return;
-            }
-
-            sendKey('key-down', key);
+            el.classList.add('active');
+            if (m === 'shift') { mod |= 1; return; }
+            if (m === 'ctrl') { mod |= 2; return; }
+            send('d', k);
         }
 
-        function handleKeyUp(element) {
-            const key = element.dataset.key;
-            const modifier = element.dataset.modifier;
-            const isToggle = element.dataset.toggle === 'true';
+        function keyUp(el) {
+            const k = el.dataset.key;
+            const m = el.dataset.modifier;
+            if (el.dataset.toggle === 'true') return;
 
-            // Toggle keys don't respond to normal key-up
-            if (isToggle) return;
-
-            element.classList.remove('active');
-
-            if (modifier) {
-                modifiers[modifier] = false;
-                return;
-            }
-
-            sendKey('key-up', key);
+            el.classList.remove('active');
+            if (m === 'shift') { mod &= ~1; return; }
+            if (m === 'ctrl') { mod &= ~2; return; }
+            send('u', k);
         }
 
-        // Handle combo buttons
-        function handleCombo(combo) {
-            switch (combo) {
-                case 'coldboot':
-                    // Hold OPTION, press RESET
-                    sendKey('key-down', 'OPTION');
+        function combo(c) {
+            if (c === 'coldboot') {
+                send('d', 'OPTION');
+                setTimeout(() => { send('d', 'RESET'); setTimeout(() => { send('u', 'RESET'); setTimeout(() => send('u', 'OPTION'), 50); }, 100); }, 50);
+            } else if (c === 'cassette') {
+                send('d', 'START'); send('d', 'OPTION');
+                setTimeout(() => {
+                    send('d', 'RESET');
                     setTimeout(() => {
-                        sendKey('key-down', 'RESET');
-                        setTimeout(() => {
-                            sendKey('key-up', 'RESET');
-                            setTimeout(() => {
-                                sendKey('key-up', 'OPTION');
-                            }, 100);
-                        }, 200);
+                        send('u', 'RESET');
+                        held['START'] = held['OPTION'] = true;
+                        document.querySelector('[data-key="START"]').classList.add('held');
+                        document.querySelector('[data-key="OPTION"]').classList.add('held');
+                        const ls = document.getElementById('labelSTART'), lo = document.getElementById('labelOPTION');
+                        if (ls) ls.classList.add('held-label');
+                        if (lo) lo.classList.add('held-label');
+                        updateHeld();
                     }, 100);
-                    break;
-                case 'cassette':
-                    // Hold START + OPTION, press RESET
-                    sendKey('key-down', 'START');
-                    sendKey('key-down', 'OPTION');
-                    setTimeout(() => {
-                        sendKey('key-down', 'RESET');
-                        setTimeout(() => {
-                            sendKey('key-up', 'RESET');
-                            // Keep START + OPTION held for user to proceed
-                            // User can release by clicking them
-                            heldKeys['START'] = true;
-                            heldKeys['OPTION'] = true;
-                            document.querySelector('[data-key="START"]').classList.add('held');
-                            document.querySelector('[data-key="OPTION"]').classList.add('held');
-                            document.getElementById('labelSTART').classList.add('held-label');
-                            document.getElementById('labelOPTION').classList.add('held-label');
-                            updateHeldStatus();
-                        }, 200);
-                    }, 100);
-                    break;
-                case 'selftest':
-                    // Hold START + OPTION + SELECT, press RESET
-                    sendKey('key-down', 'START');
-                    sendKey('key-down', 'OPTION');
-                    setTimeout(() => {
-                        sendKey('key-down', 'RESET');
-                        setTimeout(() => {
-                            sendKey('key-up', 'RESET');
-                            setTimeout(() => {
-                                sendKey('key-up', 'START');
-                                sendKey('key-up', 'OPTION');
-                            }, 100);
-                        }, 200);
-                    }, 100);
-                    break;
+                }, 50);
+            } else if (c === 'selftest') {
+                send('d', 'START'); send('d', 'OPTION');
+                setTimeout(() => { send('d', 'RESET'); setTimeout(() => { send('u', 'RESET'); setTimeout(() => { send('u', 'START'); send('u', 'OPTION'); }, 50); }, 100); }, 50);
             }
         }
 
-        // Build physical key map
-        function buildKeyMap() {
-            document.querySelectorAll('.key, .console-btn').forEach(el => {
-                const physical = el.dataset.physical;
-                if (physical) {
-                    physicalKeyMap[physical] = el;
-                }
-                // Also map by key value for fallback
-                const key = el.dataset.key;
-                if (key) {
-                    physicalKeyMap[key.toLowerCase()] = el;
-                }
-            });
-        }
-
-        // Touch events for all keys
-        document.querySelectorAll('.key, .console-btn, .util-key').forEach(key => {
-            // Check for combo
-            if (key.dataset.combo) {
-                key.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    key.classList.add('active');
-                    handleCombo(key.dataset.combo);
-                    setTimeout(() => key.classList.remove('active'), 300);
-                });
+        // Event setup
+        document.querySelectorAll('.key, .console-btn, .util-key').forEach(el => {
+            if (el.dataset.combo) {
+                el.onclick = e => { e.preventDefault(); el.classList.add('active'); combo(el.dataset.combo); setTimeout(() => el.classList.remove('active'), 200); };
                 return;
             }
-
-            key.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                handleKeyDown(key);
-            });
-
-            key.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                handleKeyUp(key);
-            });
-
-            key.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                handleKeyDown(key);
-            });
-
-            key.addEventListener('mouseup', (e) => {
-                e.preventDefault();
-                handleKeyUp(key);
-            });
-
-            key.addEventListener('mouseleave', (e) => {
-                if (key.classList.contains('active') && !key.dataset.toggle) {
-                    handleKeyUp(key);
-                }
-            });
+            el.onmousedown = el.ontouchstart = e => { e.preventDefault(); keyDown(el); };
+            el.onmouseup = el.ontouchend = e => { e.preventDefault(); keyUp(el); };
+            el.onmouseleave = () => { if (el.classList.contains('active') && !el.dataset.toggle) keyUp(el); };
         });
 
-        // Physical keyboard support with visual feedback
-        document.addEventListener('keydown', (e) => {
+        // Physical keyboard
+        document.onkeydown = e => {
             if (e.repeat) return;
-
-            // Find corresponding web button
-            let webKey = physicalKeyMap[e.code] || physicalKeyMap[e.key.toLowerCase()];
-            if (webKey && !webKey.dataset.toggle) {
-                webKey.classList.add('active');
-            }
-
-            let key = e.key;
-            if (e.key === 'Control') modifiers.ctrl = true;
-            if (e.key === 'Shift') modifiers.shift = true;
-
-            // Map function keys to Atari special keys
-            if (e.key === 'F1') key = 'OPTION';
-            else if (e.key === 'F2') key = 'SELECT';
-            else if (e.key === 'F3') key = 'START';
-            else if (e.key === 'F4') key = 'RESET';
-            else if (e.key === 'F5') key = 'Help';
-            else if (e.key === 'Insert') key = 'INVERSE';
-            else if (e.key === 'Pause') key = 'BREAK';
-
-            // Arrow keys
-            if (e.key === 'ArrowUp') key = 'ArrowUp';
-            else if (e.key === 'ArrowDown') key = 'ArrowDown';
-            else if (e.key === 'ArrowLeft') key = 'ArrowLeft';
-            else if (e.key === 'ArrowRight') key = 'ArrowRight';
-
-            sendKey('key-down', key);
             e.preventDefault();
-        });
 
-        document.addEventListener('keyup', (e) => {
-            // Find corresponding web button and remove highlight
-            let webKey = physicalKeyMap[e.code] || physicalKeyMap[e.key.toLowerCase()];
-            if (webKey && !webKey.dataset.toggle) {
-                webKey.classList.remove('active');
-            }
+            let k = e.key;
+            const web = keyMap[e.code] || keyMap[k.toLowerCase()];
+            if (web && !web.dataset.toggle) web.classList.add('active');
 
-            if (e.key === 'Control') modifiers.ctrl = false;
-            if (e.key === 'Shift') modifiers.shift = false;
+            if (k === 'Control') { mod |= 2; return; }
+            if (k === 'Shift') { mod |= 1; return; }
 
-            let key = e.key;
-            if (e.key === 'F1') key = 'OPTION';
-            else if (e.key === 'F2') key = 'SELECT';
-            else if (e.key === 'F3') key = 'START';
-            else if (e.key === 'F4') key = 'RESET';
-            else if (e.key === 'F5') key = 'Help';
-            else if (e.key === 'Insert') key = 'INVERSE';
-            else if (e.key === 'Pause') key = 'BREAK';
+            // Function key mappings
+            if (k === 'F1') k = 'OPTION';
+            else if (k === 'F2') k = 'SELECT';
+            else if (k === 'F3') k = 'START';
+            else if (k === 'F4') k = 'RESET';
+            else if (k === 'F5') k = 'Help';
+            else if (k === 'Insert') k = 'INVERSE';
+            else if (k === 'Pause') k = 'BREAK';
 
-            sendKey('key-up', key);
+            send('d', k);
+        };
+
+        document.onkeyup = e => {
             e.preventDefault();
-        });
 
-        // Initialize
-        buildKeyMap();
+            let k = e.key;
+            const web = keyMap[e.code] || keyMap[k.toLowerCase()];
+            if (web && !web.dataset.toggle) web.classList.remove('active');
+
+            if (k === 'Control') { mod &= ~2; return; }
+            if (k === 'Shift') { mod &= ~1; return; }
+
+            if (k === 'F1') k = 'OPTION';
+            else if (k === 'F2') k = 'SELECT';
+            else if (k === 'F3') k = 'START';
+            else if (k === 'F4') k = 'RESET';
+            else if (k === 'F5') k = 'Help';
+            else if (k === 'Insert') k = 'INVERSE';
+            else if (k === 'Pause') k = 'BREAK';
+
+            send('u', k);
+        };
+
+        init();
         connect();
     </script>
 </body>
