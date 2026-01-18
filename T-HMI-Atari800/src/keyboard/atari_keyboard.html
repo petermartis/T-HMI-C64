@@ -108,6 +108,21 @@
                 0 1px 2px rgba(0,0,0,0.5);
         }
 
+        /* Toggle button held state - golden glow */
+        .console-btn.held {
+            background: linear-gradient(180deg,
+                #b8a030 0%,
+                #a08020 20%,
+                #907010 50%,
+                #806000 80%,
+                #705000 100%);
+            box-shadow:
+                inset 0 1px 0 rgba(255,255,255,0.3),
+                inset 0 -1px 0 rgba(0,0,0,0.3),
+                0 0 8px rgba(255,200,0,0.6),
+                0 2px 4px rgba(0,0,0,0.5);
+        }
+
         .console-label {
             color: #e0e0e0;
             font-size: 11px;
@@ -115,6 +130,10 @@
             letter-spacing: 1px;
             min-width: 55px;
             text-align: left;
+        }
+
+        .console-label.held-label {
+            color: #ffd700;
         }
 
         .row {
@@ -169,8 +188,30 @@
         .key-break { min-width: 50px; background: linear-gradient(180deg, #8b4513 0%, #6b3503 100%); }
         .key-caps { min-width: 50px; }
         .key-del { min-width: 60px; font-size: 9px; }
-        .key-clr { min-width: 50px; font-size: 9px; }
-        .key-inverse { min-width: 42px; background: linear-gradient(180deg, #5a5a7e 0%, #4a4a6e 100%); }
+
+        /* Atari logo/inverse key */
+        .key-atari {
+            min-width: 42px;
+            background: linear-gradient(180deg, #5a5a7e 0%, #4a4a6e 100%);
+        }
+
+        .atari-logo {
+            width: 16px;
+            height: 16px;
+            position: relative;
+        }
+
+        .atari-logo::before {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 14px solid #fff;
+            top: 1px;
+            left: 0;
+        }
 
         /* Utility buttons area */
         .util-keys {
@@ -182,6 +223,7 @@
             display: flex;
             gap: 8px;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         .util-key {
@@ -203,13 +245,25 @@
             background: linear-gradient(180deg, #5a7a5a 0%, #4a6a4a 100%);
         }
 
+        /* Special combo buttons */
+        .combo-key {
+            background: linear-gradient(180deg, #5a3a5a 0%, #4a2a4a 100%);
+            border: 1px solid #6a4a6a;
+            min-width: 100px;
+            font-size: 10px;
+        }
+
+        .combo-key:active, .combo-key.active {
+            background: linear-gradient(180deg, #7a5a7a 0%, #6a4a6a 100%);
+        }
+
         /* Help text */
         .help-text {
             color: #888;
             font-size: 11px;
             margin-top: 15px;
             text-align: center;
-            max-width: 600px;
+            max-width: 700px;
         }
 
         .help-text ul {
@@ -218,12 +272,24 @@
             flex-wrap: wrap;
             gap: 10px;
             justify-content: center;
+            margin-top: 8px;
         }
 
         .help-text li {
             background: #2d2d44;
             padding: 4px 8px;
             border-radius: 4px;
+        }
+
+        .help-section {
+            margin-top: 10px;
+            padding: 8px;
+            background: #252540;
+            border-radius: 6px;
+        }
+
+        .help-section strong {
+            color: #ffd700;
         }
 
         /* Status indicator */
@@ -240,89 +306,105 @@
         #status.connected {
             background: #0f0;
         }
+
+        /* Hold indicator */
+        .hold-status {
+            position: fixed;
+            top: 5px;
+            left: 5px;
+            color: #ffd700;
+            font-size: 11px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .hold-status.visible {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <div id="status"></div>
+    <div id="holdStatus" class="hold-status">HELD: <span id="heldKeys"></span></div>
     <h2>Atari 800 XL Keyboard</h2>
 
     <div class="keyboard-container">
         <div class="main-keyboard">
             <!-- Row 1: Number row -->
             <div class="row">
-                <div class="key key-esc" data-key="Escape">ESC</div>
-                <div class="key" data-key="1"><span class="shift-char">!</span><span class="main-char">1</span></div>
-                <div class="key" data-key="2"><span class="shift-char">"</span><span class="main-char">2</span></div>
-                <div class="key" data-key="3"><span class="shift-char">#</span><span class="main-char">3</span></div>
-                <div class="key" data-key="4"><span class="shift-char">$</span><span class="main-char">4</span></div>
-                <div class="key" data-key="5"><span class="shift-char">%</span><span class="main-char">5</span></div>
-                <div class="key" data-key="6"><span class="shift-char">&amp;</span><span class="main-char">6</span></div>
-                <div class="key" data-key="7"><span class="shift-char">'</span><span class="main-char">7</span></div>
-                <div class="key" data-key="8"><span class="shift-char">@</span><span class="main-char">8</span></div>
-                <div class="key" data-key="9"><span class="shift-char">(</span><span class="main-char">9</span></div>
-                <div class="key" data-key="0"><span class="shift-char">)</span><span class="main-char">0</span></div>
-                <div class="key" data-key="<"><span class="shift-char">CLR</span><span class="main-char">&lt;</span></div>
-                <div class="key" data-key=">"><span class="shift-char">INS</span><span class="main-char">&gt;</span></div>
-                <div class="key key-del" data-key="Backspace">BACK S</div>
-                <div class="key key-break" data-key="BREAK">BREAK</div>
+                <div class="key key-esc" data-key="Escape" data-physical="Escape">ESC</div>
+                <div class="key" data-key="1" data-physical="Digit1"><span class="shift-char">!</span><span class="main-char">1</span></div>
+                <div class="key" data-key="2" data-physical="Digit2"><span class="shift-char">"</span><span class="main-char">2</span></div>
+                <div class="key" data-key="3" data-physical="Digit3"><span class="shift-char">#</span><span class="main-char">3</span></div>
+                <div class="key" data-key="4" data-physical="Digit4"><span class="shift-char">$</span><span class="main-char">4</span></div>
+                <div class="key" data-key="5" data-physical="Digit5"><span class="shift-char">%</span><span class="main-char">5</span></div>
+                <div class="key" data-key="6" data-physical="Digit6"><span class="shift-char">&amp;</span><span class="main-char">6</span></div>
+                <div class="key" data-key="7" data-physical="Digit7"><span class="shift-char">'</span><span class="main-char">7</span></div>
+                <div class="key" data-key="8" data-physical="Digit8"><span class="shift-char">@</span><span class="main-char">8</span></div>
+                <div class="key" data-key="9" data-physical="Digit9"><span class="shift-char">(</span><span class="main-char">9</span></div>
+                <div class="key" data-key="0" data-physical="Digit0"><span class="shift-char">)</span><span class="main-char">0</span></div>
+                <div class="key" data-key="<" data-physical="Comma"><span class="shift-char">CLR</span><span class="main-char">&lt;</span></div>
+                <div class="key" data-key=">" data-physical="Period"><span class="shift-char">INS</span><span class="main-char">&gt;</span></div>
+                <div class="key key-del" data-key="Backspace" data-physical="Backspace">BACK S</div>
+                <div class="key key-break" data-key="BREAK" data-physical="Pause">BREAK</div>
             </div>
 
             <!-- Row 2: QWERTY row -->
             <div class="row">
-                <div class="key key-tab" data-key="Tab">TAB</div>
-                <div class="key" data-key="q">Q</div>
-                <div class="key" data-key="w">W</div>
-                <div class="key" data-key="e">E</div>
-                <div class="key" data-key="r">R</div>
-                <div class="key" data-key="t">T</div>
-                <div class="key" data-key="y">Y</div>
-                <div class="key" data-key="u">U</div>
-                <div class="key" data-key="i">I</div>
-                <div class="key" data-key="o">O</div>
-                <div class="key" data-key="p">P</div>
-                <div class="key" data-key="-"><span class="shift-char">_</span><span class="main-char">-</span></div>
-                <div class="key" data-key="="><span class="shift-char">|</span><span class="main-char">=</span></div>
-                <div class="key key-return" data-key="Enter">RETURN</div>
+                <div class="key key-tab" data-key="Tab" data-physical="Tab">TAB</div>
+                <div class="key" data-key="q" data-physical="KeyQ">Q</div>
+                <div class="key" data-key="w" data-physical="KeyW">W</div>
+                <div class="key" data-key="e" data-physical="KeyE">E</div>
+                <div class="key" data-key="r" data-physical="KeyR">R</div>
+                <div class="key" data-key="t" data-physical="KeyT">T</div>
+                <div class="key" data-key="y" data-physical="KeyY">Y</div>
+                <div class="key" data-key="u" data-physical="KeyU">U</div>
+                <div class="key" data-key="i" data-physical="KeyI">I</div>
+                <div class="key" data-key="o" data-physical="KeyO">O</div>
+                <div class="key" data-key="p" data-physical="KeyP">P</div>
+                <div class="key" data-key="-" data-physical="Minus"><span class="shift-char">_</span><span class="main-char">-</span></div>
+                <div class="key" data-key="=" data-physical="Equal"><span class="shift-char">|</span><span class="main-char">=</span></div>
+                <div class="key key-return" data-key="Enter" data-physical="Enter">RETURN</div>
             </div>
 
             <!-- Row 3: ASDF row -->
             <div class="row">
-                <div class="key key-ctrl" data-key="Control" data-modifier="ctrl">CTRL</div>
-                <div class="key" data-key="a">A</div>
-                <div class="key" data-key="s">S</div>
-                <div class="key" data-key="d">D</div>
-                <div class="key" data-key="f">F</div>
-                <div class="key" data-key="g">G</div>
-                <div class="key" data-key="h">H</div>
-                <div class="key" data-key="j">J</div>
-                <div class="key" data-key="k">K</div>
-                <div class="key" data-key="l">L</div>
-                <div class="key" data-key=";"><span class="shift-char">:</span><span class="main-char">;</span></div>
-                <div class="key" data-key="+"><span class="shift-char">\</span><span class="main-char">+</span></div>
-                <div class="key" data-key="*"><span class="shift-char">^</span><span class="main-char">*</span></div>
-                <div class="key key-caps" data-key="Capslock">CAPS</div>
+                <div class="key key-ctrl" data-key="Control" data-modifier="ctrl" data-physical="ControlLeft">CTRL</div>
+                <div class="key" data-key="a" data-physical="KeyA">A</div>
+                <div class="key" data-key="s" data-physical="KeyS">S</div>
+                <div class="key" data-key="d" data-physical="KeyD">D</div>
+                <div class="key" data-key="f" data-physical="KeyF">F</div>
+                <div class="key" data-key="g" data-physical="KeyG">G</div>
+                <div class="key" data-key="h" data-physical="KeyH">H</div>
+                <div class="key" data-key="j" data-physical="KeyJ">J</div>
+                <div class="key" data-key="k" data-physical="KeyK">K</div>
+                <div class="key" data-key="l" data-physical="KeyL">L</div>
+                <div class="key" data-key=";" data-physical="Semicolon"><span class="shift-char">:</span><span class="main-char">;</span></div>
+                <div class="key" data-key="+" data-physical="Equal"><span class="shift-char">\</span><span class="main-char">+</span></div>
+                <div class="key" data-key="*" data-physical="Digit8"><span class="shift-char">^</span><span class="main-char">*</span></div>
+                <div class="key key-caps" data-key="Capslock" data-physical="CapsLock">CAPS</div>
             </div>
 
             <!-- Row 4: ZXCV row -->
             <div class="row">
-                <div class="key key-shift" data-key="Shift" data-modifier="shift">SHIFT</div>
-                <div class="key" data-key="z">Z</div>
-                <div class="key" data-key="x">X</div>
-                <div class="key" data-key="c">C</div>
-                <div class="key" data-key="v">V</div>
-                <div class="key" data-key="b">B</div>
-                <div class="key" data-key="n">N</div>
-                <div class="key" data-key="m">M</div>
-                <div class="key" data-key=","><span class="shift-char">[</span><span class="main-char">,</span></div>
-                <div class="key" data-key="."><span class="shift-char">]</span><span class="main-char">.</span></div>
-                <div class="key" data-key="/"><span class="shift-char">?</span><span class="main-char">/</span></div>
-                <div class="key key-inverse" data-key="INVERSE">INV</div>
-                <div class="key key-shift-r" data-key="Shift" data-modifier="shift">SHIFT</div>
+                <div class="key key-shift" data-key="Shift" data-modifier="shift" data-physical="ShiftLeft">SHIFT</div>
+                <div class="key" data-key="z" data-physical="KeyZ">Z</div>
+                <div class="key" data-key="x" data-physical="KeyX">X</div>
+                <div class="key" data-key="c" data-physical="KeyC">C</div>
+                <div class="key" data-key="v" data-physical="KeyV">V</div>
+                <div class="key" data-key="b" data-physical="KeyB">B</div>
+                <div class="key" data-key="n" data-physical="KeyN">N</div>
+                <div class="key" data-key="m" data-physical="KeyM">M</div>
+                <div class="key" data-key="," data-physical="Comma"><span class="shift-char">[</span><span class="main-char">,</span></div>
+                <div class="key" data-key="." data-physical="Period"><span class="shift-char">]</span><span class="main-char">.</span></div>
+                <div class="key" data-key="/" data-physical="Slash"><span class="shift-char">?</span><span class="main-char">/</span></div>
+                <div class="key key-atari" data-key="INVERSE" data-physical="Insert"><div class="atari-logo"></div></div>
+                <div class="key key-shift-r" data-key="Shift" data-modifier="shift" data-physical="ShiftRight">SHIFT</div>
             </div>
 
             <!-- Row 5: Space bar -->
             <div class="row">
-                <div class="key key-space" data-key=" ">SPACE</div>
+                <div class="key key-space" data-key=" " data-physical="Space">SPACE</div>
             </div>
         </div>
 
@@ -333,16 +415,16 @@
                 <span class="console-label">RESET</span>
             </div>
             <div class="console-row">
-                <div class="console-btn" data-key="OPTION"></div>
-                <span class="console-label">OPTION</span>
+                <div class="console-btn" data-key="OPTION" data-toggle="true"></div>
+                <span class="console-label" id="labelOPTION">OPTION</span>
             </div>
             <div class="console-row">
                 <div class="console-btn" data-key="SELECT"></div>
                 <span class="console-label">SELECT</span>
             </div>
             <div class="console-row">
-                <div class="console-btn" data-key="START"></div>
-                <span class="console-label">START</span>
+                <div class="console-btn" data-key="START" data-toggle="true"></div>
+                <span class="console-label" id="labelSTART">START</span>
             </div>
             <div class="console-row">
                 <div class="console-btn" data-key="Help"></div>
@@ -355,18 +437,30 @@
     <div class="util-keys">
         <div class="util-key" data-key="LOAD">LOAD</div>
         <div class="util-key" data-key="SAVE">SAVE</div>
+        <div class="util-key combo-key" data-combo="coldboot" title="Cold boot with OPTION held (skip BASIC)">COLD BOOT</div>
+        <div class="util-key combo-key" data-combo="cassette" title="Cassette load mode (START+OPTION+RESET)">CASSETTE</div>
+        <div class="util-key combo-key" data-combo="selftest" title="Enter self-test diagnostics">SELF-TEST</div>
     </div>
 
     <div class="help-text">
         <ul>
-            <li>Arrow keys: Ctrl + -/=/+/*</li>
+            <li>Arrow keys: ← → ↑ ↓</li>
             <li>BREAK = NMI</li>
+            <li>▲ = INVERSE (Atari logo key)</li>
         </ul>
+        <div class="help-section">
+            <strong>Toggle Keys:</strong> Click OPTION or START to hold them down (turns gold).<br>
+            Click again to release. Use with RESET for boot combinations.
+        </div>
     </div>
 
     <script>
         let ws;
         let modifiers = { shift: false, ctrl: false };
+        let heldKeys = {}; // Toggle keys that are held
+
+        // Map physical keyboard codes to web button elements
+        const physicalKeyMap = {};
 
         function connect() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -405,9 +499,43 @@
             }
         }
 
+        function updateHeldStatus() {
+            const heldNames = Object.keys(heldKeys).filter(k => heldKeys[k]);
+            const statusEl = document.getElementById('holdStatus');
+            const keysEl = document.getElementById('heldKeys');
+            if (heldNames.length > 0) {
+                keysEl.textContent = heldNames.join(' + ');
+                statusEl.classList.add('visible');
+            } else {
+                statusEl.classList.remove('visible');
+            }
+        }
+
         function handleKeyDown(element) {
             const key = element.dataset.key;
             const modifier = element.dataset.modifier;
+            const isToggle = element.dataset.toggle === 'true';
+
+            // Toggle keys work differently
+            if (isToggle) {
+                if (heldKeys[key]) {
+                    // Release
+                    heldKeys[key] = false;
+                    element.classList.remove('held');
+                    const label = document.getElementById('label' + key);
+                    if (label) label.classList.remove('held-label');
+                    sendKey('key-up', key);
+                } else {
+                    // Hold
+                    heldKeys[key] = true;
+                    element.classList.add('held');
+                    const label = document.getElementById('label' + key);
+                    if (label) label.classList.add('held-label');
+                    sendKey('key-down', key);
+                }
+                updateHeldStatus();
+                return;
+            }
 
             element.classList.add('active');
 
@@ -422,6 +550,10 @@
         function handleKeyUp(element) {
             const key = element.dataset.key;
             const modifier = element.dataset.modifier;
+            const isToggle = element.dataset.toggle === 'true';
+
+            // Toggle keys don't respond to normal key-up
+            if (isToggle) return;
 
             element.classList.remove('active');
 
@@ -433,8 +565,88 @@
             sendKey('key-up', key);
         }
 
+        // Handle combo buttons
+        function handleCombo(combo) {
+            switch (combo) {
+                case 'coldboot':
+                    // Hold OPTION, press RESET
+                    sendKey('key-down', 'OPTION');
+                    setTimeout(() => {
+                        sendKey('key-down', 'RESET');
+                        setTimeout(() => {
+                            sendKey('key-up', 'RESET');
+                            setTimeout(() => {
+                                sendKey('key-up', 'OPTION');
+                            }, 100);
+                        }, 200);
+                    }, 100);
+                    break;
+                case 'cassette':
+                    // Hold START + OPTION, press RESET
+                    sendKey('key-down', 'START');
+                    sendKey('key-down', 'OPTION');
+                    setTimeout(() => {
+                        sendKey('key-down', 'RESET');
+                        setTimeout(() => {
+                            sendKey('key-up', 'RESET');
+                            // Keep START + OPTION held for user to proceed
+                            // User can release by clicking them
+                            heldKeys['START'] = true;
+                            heldKeys['OPTION'] = true;
+                            document.querySelector('[data-key="START"]').classList.add('held');
+                            document.querySelector('[data-key="OPTION"]').classList.add('held');
+                            document.getElementById('labelSTART').classList.add('held-label');
+                            document.getElementById('labelOPTION').classList.add('held-label');
+                            updateHeldStatus();
+                        }, 200);
+                    }, 100);
+                    break;
+                case 'selftest':
+                    // Hold START + OPTION + SELECT, press RESET
+                    sendKey('key-down', 'START');
+                    sendKey('key-down', 'OPTION');
+                    setTimeout(() => {
+                        sendKey('key-down', 'RESET');
+                        setTimeout(() => {
+                            sendKey('key-up', 'RESET');
+                            setTimeout(() => {
+                                sendKey('key-up', 'START');
+                                sendKey('key-up', 'OPTION');
+                            }, 100);
+                        }, 200);
+                    }, 100);
+                    break;
+            }
+        }
+
+        // Build physical key map
+        function buildKeyMap() {
+            document.querySelectorAll('.key, .console-btn').forEach(el => {
+                const physical = el.dataset.physical;
+                if (physical) {
+                    physicalKeyMap[physical] = el;
+                }
+                // Also map by key value for fallback
+                const key = el.dataset.key;
+                if (key) {
+                    physicalKeyMap[key.toLowerCase()] = el;
+                }
+            });
+        }
+
         // Touch events for all keys
         document.querySelectorAll('.key, .console-btn, .util-key').forEach(key => {
+            // Check for combo
+            if (key.dataset.combo) {
+                key.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    key.classList.add('active');
+                    handleCombo(key.dataset.combo);
+                    setTimeout(() => key.classList.remove('active'), 300);
+                });
+                return;
+            }
+
             key.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 handleKeyDown(key);
@@ -456,21 +668,36 @@
             });
 
             key.addEventListener('mouseleave', (e) => {
-                if (key.classList.contains('active')) {
+                if (key.classList.contains('active') && !key.dataset.toggle) {
                     handleKeyUp(key);
                 }
             });
         });
 
-        // Physical keyboard support
+        // Physical keyboard support with visual feedback
         document.addEventListener('keydown', (e) => {
             if (e.repeat) return;
+
+            // Find corresponding web button
+            let webKey = physicalKeyMap[e.code] || physicalKeyMap[e.key.toLowerCase()];
+            if (webKey && !webKey.dataset.toggle) {
+                webKey.classList.add('active');
+            }
 
             let key = e.key;
             if (e.key === 'Control') modifiers.ctrl = true;
             if (e.key === 'Shift') modifiers.shift = true;
 
-            // Map arrow keys to Atari cursor control
+            // Map function keys to Atari special keys
+            if (e.key === 'F1') key = 'OPTION';
+            else if (e.key === 'F2') key = 'SELECT';
+            else if (e.key === 'F3') key = 'START';
+            else if (e.key === 'F4') key = 'RESET';
+            else if (e.key === 'F5') key = 'Help';
+            else if (e.key === 'Insert') key = 'INVERSE';
+            else if (e.key === 'Pause') key = 'BREAK';
+
+            // Arrow keys
             if (e.key === 'ArrowUp') key = 'ArrowUp';
             else if (e.key === 'ArrowDown') key = 'ArrowDown';
             else if (e.key === 'ArrowLeft') key = 'ArrowLeft';
@@ -481,14 +708,30 @@
         });
 
         document.addEventListener('keyup', (e) => {
+            // Find corresponding web button and remove highlight
+            let webKey = physicalKeyMap[e.code] || physicalKeyMap[e.key.toLowerCase()];
+            if (webKey && !webKey.dataset.toggle) {
+                webKey.classList.remove('active');
+            }
+
             if (e.key === 'Control') modifiers.ctrl = false;
             if (e.key === 'Shift') modifiers.shift = false;
 
-            sendKey('key-up', e.key);
+            let key = e.key;
+            if (e.key === 'F1') key = 'OPTION';
+            else if (e.key === 'F2') key = 'SELECT';
+            else if (e.key === 'F3') key = 'START';
+            else if (e.key === 'F4') key = 'RESET';
+            else if (e.key === 'F5') key = 'Help';
+            else if (e.key === 'Insert') key = 'INVERSE';
+            else if (e.key === 'Pause') key = 'BREAK';
+
+            sendKey('key-up', key);
             e.preventDefault();
         });
 
-        // Connect on load
+        // Initialize
+        buildKeyMap();
         connect();
     </script>
 </body>
