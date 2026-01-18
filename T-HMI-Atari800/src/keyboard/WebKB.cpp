@@ -634,27 +634,63 @@ void WebKB::connectToWiFi(const String &ssid, const String &pass) {
   WiFi.begin(ssid.c_str(), pass.c_str());
 
   int attempts = 0;
-  const int maxAttempts = 60; // 30 seconds
-  while (WiFi.status() != WL_CONNECTED && attempts < maxAttempts) {
+  const int maxAttempts = 40; // 20 seconds total
+  wl_status_t status;
+
+  while (attempts < maxAttempts) {
+    status = WiFi.status();
+
+    // Check if connected
+    if (status == WL_CONNECTED) {
+      PlatformManager::getInstance().log(LOG_INFO, TAG,
+          "WiFi connected on attempt %d, status=%d", attempts, status);
+      break;
+    }
+
+    // Check for failure states
+    if (status == WL_CONNECT_FAILED || status == WL_NO_SSID_AVAIL) {
+      PlatformManager::getInstance().log(LOG_INFO, TAG,
+          "WiFi connection failed early: status=%d", status);
+      break;
+    }
+
     delay(500);
     attempts++;
+
+    // Log progress every 5 seconds
+    if (attempts % 10 == 0) {
+      PlatformManager::getInstance().log(LOG_INFO, TAG,
+          "WiFi connecting... attempt %d/%d, status=%d",
+          attempts, maxAttempts, status);
+    }
   }
 
-  if (WiFi.status() == WL_CONNECTED) {
+  // Final status check
+  status = WiFi.status();
+  PlatformManager::getInstance().log(LOG_INFO, TAG,
+      "WiFi loop exited: status=%d, attempts=%d, IP=%s",
+      status, attempts, WiFi.localIP().toString().c_str());
+
+  if (status == WL_CONNECTED) {
     PlatformManager::getInstance().log(
         LOG_INFO, TAG, "Connection to ssid %s established. IP: %s",
         ssid.c_str(), WiFi.localIP().toString().c_str());
 
-    // Start web server directly here instead of deferring
+    // Clear any pending flag since we're starting directly
+    pendingWebServerStart.store(false);
+
+    // Start web server directly here
     startOneShotTimer([this]() { this->printIPAddress(); }, 4000);
     startWebServer();
     serverStarted = true;
   } else {
-
     PlatformManager::getInstance().log(LOG_INFO, TAG,
-                                       "Connection to ssid %s failed.", ssid.c_str());
+        "Connection to ssid %s failed (status=%d). Starting captive portal.",
+        ssid.c_str(), status);
+    WiFi.disconnect(true);
+    delay(500);
     WiFi.mode(WIFI_OFF);
-    delay(1000);
+    delay(500);
     startCaptivePortal();
   }
 }
