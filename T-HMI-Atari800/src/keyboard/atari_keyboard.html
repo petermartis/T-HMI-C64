@@ -447,18 +447,45 @@
     </div>
 
     <script>
-        // Optimized for low latency with minimum key hold time
+        // Robust keyboard handling with key repeat and heartbeat
         let ws;
         let mod = 0; // Bitmask: 1=shift, 2=ctrl
-        let held = {}; // Toggle keys
+        let held = {}; // Toggle keys (OPTION, START)
 
-        // Track key press times - ensures emulator sees key for at least MIN_HOLD_MS
-        const keyDownTime = {};
-        const pendingKeyUp = {};
-        const MIN_HOLD_MS = 50; // Minimum time key must be held (≈3 frames at 60fps)
+        // Track currently pressed keys and their state
+        const activeKeys = {};      // Keys currently held down
+        const keyDownTime = {};     // When key was pressed
+        const pendingKeyUp = {};    // Pending key-up timeouts
+        const lastRepeat = {};      // Last time we sent repeat for this key
+
+        const MIN_HOLD_MS = 80;     // Minimum hold time before key-up
+        const REPEAT_INTERVAL = 60; // Minimum ms between repeat sends
+        const HEARTBEAT_MS = 100;   // Re-send held keys every N ms
 
         // Pre-build key map at load time
         const keyMap = {};
+
+        // Heartbeat: periodically re-send key-down for all held keys
+        let heartbeatTimer = null;
+
+        function startHeartbeat() {
+            if (heartbeatTimer) return;
+            heartbeatTimer = setInterval(() => {
+                const now = Date.now();
+                for (const k in activeKeys) {
+                    if (activeKeys[k]) {
+                        send('d', k);
+                    }
+                }
+            }, HEARTBEAT_MS);
+        }
+
+        function stopHeartbeat() {
+            if (heartbeatTimer) {
+                clearInterval(heartbeatTimer);
+                heartbeatTimer = null;
+            }
+        }
 
         function init() {
             document.querySelectorAll('.key, .console-btn').forEach(el => {
@@ -477,7 +504,6 @@
         }
 
         // Minimal JSON for speed: {"t":"d","k":"a","m":0}
-        // t = type (d=down, u=up), k = key, m = modifiers bitmask
         function send(type, key) {
             if (ws && ws.readyState === 1) {
                 ws.send(`{"t":"${type}","k":"${key}","m":${mod}}`);
@@ -495,12 +521,13 @@
             }
         }
 
-        function keyDown(el) {
+        function keyDown(el, isRepeat = false) {
             const k = el.dataset.key;
             const m = el.dataset.modifier;
             const tog = el.dataset.toggle === 'true';
 
             if (tog) {
+                if (isRepeat) return; // No repeat for toggle keys
                 if (held[k]) {
                     held[k] = false;
                     el.classList.remove('held');
@@ -528,7 +555,19 @@
             if (m === 'shift') { mod |= 1; return; }
             if (m === 'ctrl') { mod |= 2; return; }
 
-            keyDownTime[k] = Date.now();
+            // For repeat events, throttle to REPEAT_INTERVAL
+            if (isRepeat) {
+                const now = Date.now();
+                if (lastRepeat[k] && now - lastRepeat[k] < REPEAT_INTERVAL) {
+                    return; // Too soon since last repeat
+                }
+                lastRepeat[k] = now;
+            } else {
+                keyDownTime[k] = Date.now();
+                activeKeys[k] = true;
+                startHeartbeat();
+            }
+
             send('d', k);
         }
 
@@ -541,13 +580,20 @@
             if (m === 'shift') { mod &= ~1; return; }
             if (m === 'ctrl') { mod &= ~2; return; }
 
+            delete activeKeys[k];
+            delete lastRepeat[k];
+
+            // Stop heartbeat if no keys held
+            if (Object.keys(activeKeys).length === 0) {
+                stopHeartbeat();
+            }
+
             // Ensure minimum hold time so emulator sees the key
             const downTime = keyDownTime[k] || 0;
             const elapsed = Date.now() - downTime;
             const remaining = MIN_HOLD_MS - elapsed;
 
             if (remaining > 0) {
-                // Delay key-up to meet minimum hold time
                 pendingKeyUp[k] = setTimeout(() => {
                     send('u', k);
                     delete pendingKeyUp[k];
@@ -584,7 +630,7 @@
             }
         }
 
-        // Event setup
+        // Virtual keyboard events
         document.querySelectorAll('.key, .console-btn, .util-key').forEach(el => {
             if (el.dataset.combo) {
                 el.onclick = e => { e.preventDefault(); el.classList.add('active'); combo(el.dataset.combo); setTimeout(() => el.classList.remove('active'), 200); };
@@ -595,17 +641,17 @@
             el.onmouseleave = () => { if (el.classList.contains('active') && !el.dataset.toggle) keyUp(el); };
         });
 
-        // Physical keyboard with minimum hold time
+        // Physical keyboard - handle both initial press AND repeat
         document.onkeydown = e => {
-            if (e.repeat) return;
             e.preventDefault();
 
             let k = e.key;
             const web = keyMap[e.code] || keyMap[k.toLowerCase()];
             if (web && !web.dataset.toggle) web.classList.add('active');
 
-            if (k === 'Control') { mod |= 2; return; }
-            if (k === 'Shift') { mod |= 1; return; }
+            // Modifiers don't repeat
+            if (k === 'Control') { if (!e.repeat) mod |= 2; return; }
+            if (k === 'Shift') { if (!e.repeat) mod |= 1; return; }
 
             // Function key mappings
             if (k === 'F1') k = 'OPTION';
@@ -616,14 +662,23 @@
             else if (k === 'Insert') k = 'INVERSE';
             else if (k === 'Pause') k = 'BREAK';
 
-            // Cancel any pending key-up
-            if (pendingKeyUp[k]) {
-                clearTimeout(pendingKeyUp[k]);
-                delete pendingKeyUp[k];
+            if (e.repeat) {
+                // Throttled repeat
+                const now = Date.now();
+                if (lastRepeat[k] && now - lastRepeat[k] < REPEAT_INTERVAL) return;
+                lastRepeat[k] = now;
+                send('d', k);
+            } else {
+                // Initial press
+                if (pendingKeyUp[k]) {
+                    clearTimeout(pendingKeyUp[k]);
+                    delete pendingKeyUp[k];
+                }
+                keyDownTime[k] = Date.now();
+                activeKeys[k] = true;
+                startHeartbeat();
+                send('d', k);
             }
-
-            keyDownTime[k] = Date.now();
-            send('d', k);
         };
 
         document.onkeyup = e => {
@@ -643,6 +698,13 @@
             else if (k === 'F5') k = 'Help';
             else if (k === 'Insert') k = 'INVERSE';
             else if (k === 'Pause') k = 'BREAK';
+
+            delete activeKeys[k];
+            delete lastRepeat[k];
+
+            if (Object.keys(activeKeys).length === 0) {
+                stopHeartbeat();
+            }
 
             // Ensure minimum hold time
             const downTime = keyDownTime[k] || 0;
