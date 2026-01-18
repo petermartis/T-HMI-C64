@@ -670,7 +670,7 @@ void WebKB::startWebServer() {
   server->addHandler(ws);
 
   server->on("/", HTTP_GET, [](AsyncWebServerRequest *req) {
-    req->send(200, "text/html", HTMLCSSKB_html, HTMLCSSKB_html_len);
+    req->send(200, "text/html", (const uint8_t*)HTMLCSSKB_html, HTMLCSSKB_html_len);
   });
 
   // File upload endpoint for XEX/BIN/ATR files
