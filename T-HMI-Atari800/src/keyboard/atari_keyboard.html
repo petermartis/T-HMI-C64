@@ -447,10 +447,15 @@
     </div>
 
     <script>
-        // Optimized for low latency
+        // Optimized for low latency with minimum key hold time
         let ws;
         let mod = 0; // Bitmask: 1=shift, 2=ctrl
         let held = {}; // Toggle keys
+
+        // Track key press times - ensures emulator sees key for at least MIN_HOLD_MS
+        const keyDownTime = {};
+        const pendingKeyUp = {};
+        const MIN_HOLD_MS = 50; // Minimum time key must be held (≈3 frames at 60fps)
 
         // Pre-build key map at load time
         const keyMap = {};
@@ -513,9 +518,17 @@
                 return;
             }
 
+            // Cancel any pending key-up for this key
+            if (pendingKeyUp[k]) {
+                clearTimeout(pendingKeyUp[k]);
+                delete pendingKeyUp[k];
+            }
+
             el.classList.add('active');
             if (m === 'shift') { mod |= 1; return; }
             if (m === 'ctrl') { mod |= 2; return; }
+
+            keyDownTime[k] = Date.now();
             send('d', k);
         }
 
@@ -527,7 +540,23 @@
             el.classList.remove('active');
             if (m === 'shift') { mod &= ~1; return; }
             if (m === 'ctrl') { mod &= ~2; return; }
-            send('u', k);
+
+            // Ensure minimum hold time so emulator sees the key
+            const downTime = keyDownTime[k] || 0;
+            const elapsed = Date.now() - downTime;
+            const remaining = MIN_HOLD_MS - elapsed;
+
+            if (remaining > 0) {
+                // Delay key-up to meet minimum hold time
+                pendingKeyUp[k] = setTimeout(() => {
+                    send('u', k);
+                    delete pendingKeyUp[k];
+                    delete keyDownTime[k];
+                }, remaining);
+            } else {
+                send('u', k);
+                delete keyDownTime[k];
+            }
         }
 
         function combo(c) {
@@ -566,7 +595,7 @@
             el.onmouseleave = () => { if (el.classList.contains('active') && !el.dataset.toggle) keyUp(el); };
         });
 
-        // Physical keyboard
+        // Physical keyboard with minimum hold time
         document.onkeydown = e => {
             if (e.repeat) return;
             e.preventDefault();
@@ -587,6 +616,13 @@
             else if (k === 'Insert') k = 'INVERSE';
             else if (k === 'Pause') k = 'BREAK';
 
+            // Cancel any pending key-up
+            if (pendingKeyUp[k]) {
+                clearTimeout(pendingKeyUp[k]);
+                delete pendingKeyUp[k];
+            }
+
+            keyDownTime[k] = Date.now();
             send('d', k);
         };
 
@@ -608,7 +644,21 @@
             else if (k === 'Insert') k = 'INVERSE';
             else if (k === 'Pause') k = 'BREAK';
 
-            send('u', k);
+            // Ensure minimum hold time
+            const downTime = keyDownTime[k] || 0;
+            const elapsed = Date.now() - downTime;
+            const remaining = MIN_HOLD_MS - elapsed;
+
+            if (remaining > 0) {
+                pendingKeyUp[k] = setTimeout(() => {
+                    send('u', k);
+                    delete pendingKeyUp[k];
+                    delete keyDownTime[k];
+                }, remaining);
+            } else {
+                send('u', k);
+                delete keyDownTime[k];
+            }
         };
 
         init();
