@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<!--
+ Atari 800 XL Web Keyboard
+ Copyright (C) 2025 <uliuc@gmx.net>
+
+ Based on the great work of Bryan Miner's mac keyboard
+ https://codepen.io/gymbry/pen/KWwepx
+
+ This program is free software; you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by the
+ Free Software Foundation; either version 3 of the License, or (at your
+ option) any later version.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Atari 800 XL Keyboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            user-select: none;
+        }
+
+        h2 {
+            color: #e0e0e0;
+            margin: 10px 0;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .keyboard-container {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            max-width: 100%;
+        }
+
+        .main-keyboard {
+            background: #2d2d44;
+            padding: 12px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        .console-keys {
+            background: #2d2d44;
+            padding: 12px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .row {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            margin-bottom: 4px;
+        }
+
+        .key {
+            background: linear-gradient(180deg, #4a4a5e 0%, #3a3a4e 100%);
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 11px;
+            font-weight: bold;
+            min-width: 36px;
+            height: 36px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .key:active, .key.active {
+            background: linear-gradient(180deg, #6a6a8e 0%, #5a5a7e 100%);
+            transform: translateY(1px);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .key .shift-char {
+            font-size: 9px;
+            color: #aaa;
+        }
+
+        .key .main-char {
+            font-size: 12px;
+        }
+
+        /* Special key widths */
+        .key-esc { min-width: 42px; }
+        .key-tab { min-width: 54px; }
+        .key-ctrl { min-width: 60px; }
+        .key-shift { min-width: 72px; }
+        .key-shift-r { min-width: 72px; }
+        .key-space { min-width: 200px; }
+        .key-return { min-width: 60px; height: 36px; }
+        .key-break { min-width: 50px; background: linear-gradient(180deg, #8b4513 0%, #6b3503 100%); }
+        .key-caps { min-width: 50px; }
+        .key-del { min-width: 60px; font-size: 9px; }
+        .key-clr { min-width: 50px; font-size: 9px; }
+        .key-inverse { min-width: 42px; background: linear-gradient(180deg, #5a5a7e 0%, #4a4a6e 100%); }
+
+        /* Console keys */
+        .console-key {
+            background: linear-gradient(180deg, #5a5a6e 0%, #4a4a5e 100%);
+            border: 1px solid #666;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 10px;
+            font-weight: bold;
+            min-width: 60px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .console-key:active, .console-key.active {
+            background: linear-gradient(180deg, #7a7a9e 0%, #6a6a8e 100%);
+            transform: translateY(1px);
+        }
+
+        .console-key.reset {
+            background: linear-gradient(180deg, #b44 0%, #933 100%);
+        }
+
+        .console-key.option {
+            background: linear-gradient(180deg, #4a6a4a 0%, #3a5a3a 100%);
+        }
+
+        .console-key.select {
+            background: linear-gradient(180deg, #4a4a6a 0%, #3a3a5a 100%);
+        }
+
+        .console-key.start {
+            background: linear-gradient(180deg, #6a6a4a 0%, #5a5a3a 100%);
+        }
+
+        .console-key.help {
+            background: linear-gradient(180deg, #6a4a6a 0%, #5a3a5a 100%);
+        }
+
+        /* Function keys area */
+        .func-keys {
+            background: #2d2d44;
+            padding: 12px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .func-key {
+            background: linear-gradient(180deg, #3a5a3a 0%, #2a4a2a 100%);
+            border: 1px solid #4a6a4a;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 10px;
+            font-weight: bold;
+            min-width: 50px;
+            height: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .func-key:active, .func-key.active {
+            background: linear-gradient(180deg, #5a7a5a 0%, #4a6a4a 100%);
+        }
+
+        /* Help text */
+        .help-text {
+            color: #888;
+            font-size: 11px;
+            margin-top: 15px;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .help-text ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .help-text li {
+            background: #2d2d44;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        /* Status indicator */
+        #status {
+            position: fixed;
+            top: 5px;
+            right: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #f00;
+        }
+
+        #status.connected {
+            background: #0f0;
+        }
+    </style>
+</head>
+<body>
+    <div id="status"></div>
+    <h2>Atari 800 XL Keyboard</h2>
+
+    <div class="keyboard-container">
+        <div class="main-keyboard">
+            <!-- Row 1: Number row -->
+            <div class="row">
+                <div class="key key-esc" data-key="Escape">ESC</div>
+                <div class="key" data-key="1"><span class="shift-char">!</span><span class="main-char">1</span></div>
+                <div class="key" data-key="2"><span class="shift-char">"</span><span class="main-char">2</span></div>
+                <div class="key" data-key="3"><span class="shift-char">#</span><span class="main-char">3</span></div>
+                <div class="key" data-key="4"><span class="shift-char">$</span><span class="main-char">4</span></div>
+                <div class="key" data-key="5"><span class="shift-char">%</span><span class="main-char">5</span></div>
+                <div class="key" data-key="6"><span class="shift-char">&amp;</span><span class="main-char">6</span></div>
+                <div class="key" data-key="7"><span class="shift-char">'</span><span class="main-char">7</span></div>
+                <div class="key" data-key="8"><span class="shift-char">@</span><span class="main-char">8</span></div>
+                <div class="key" data-key="9"><span class="shift-char">(</span><span class="main-char">9</span></div>
+                <div class="key" data-key="0"><span class="shift-char">)</span><span class="main-char">0</span></div>
+                <div class="key" data-key="<"><span class="shift-char">CLEAR</span><span class="main-char">&lt;</span></div>
+                <div class="key" data-key=">"><span class="shift-char">INSERT</span><span class="main-char">&gt;</span></div>
+                <div class="key key-del" data-key="Backspace">DELETE<br>BACKSP</div>
+                <div class="key key-break" data-key="BREAK">BREAK</div>
+            </div>
+
+            <!-- Row 2: QWERTY row -->
+            <div class="row">
+                <div class="key key-tab" data-key="Tab">TAB</div>
+                <div class="key" data-key="q">Q</div>
+                <div class="key" data-key="w">W</div>
+                <div class="key" data-key="e">E</div>
+                <div class="key" data-key="r">R</div>
+                <div class="key" data-key="t">T</div>
+                <div class="key" data-key="y">Y</div>
+                <div class="key" data-key="u">U</div>
+                <div class="key" data-key="i">I</div>
+                <div class="key" data-key="o">O</div>
+                <div class="key" data-key="p">P</div>
+                <div class="key" data-key="-"><span class="shift-char">_</span><span class="main-char">-</span></div>
+                <div class="key" data-key="="><span class="shift-char">|</span><span class="main-char">=</span></div>
+                <div class="key key-return" data-key="Enter">RETURN</div>
+            </div>
+
+            <!-- Row 3: ASDF row -->
+            <div class="row">
+                <div class="key key-ctrl" data-key="Control" data-modifier="ctrl">CTRL</div>
+                <div class="key" data-key="a">A</div>
+                <div class="key" data-key="s">S</div>
+                <div class="key" data-key="d">D</div>
+                <div class="key" data-key="f">F</div>
+                <div class="key" data-key="g">G</div>
+                <div class="key" data-key="h">H</div>
+                <div class="key" data-key="j">J</div>
+                <div class="key" data-key="k">K</div>
+                <div class="key" data-key="l">L</div>
+                <div class="key" data-key=";"><span class="shift-char">:</span><span class="main-char">;</span></div>
+                <div class="key" data-key="+"><span class="shift-char">\</span><span class="main-char">+</span></div>
+                <div class="key" data-key="*"><span class="shift-char">^</span><span class="main-char">*</span></div>
+                <div class="key key-caps" data-key="Capslock">CAPS</div>
+            </div>
+
+            <!-- Row 4: ZXCV row -->
+            <div class="row">
+                <div class="key key-shift" data-key="Shift" data-modifier="shift">SHIFT</div>
+                <div class="key" data-key="z">Z</div>
+                <div class="key" data-key="x">X</div>
+                <div class="key" data-key="c">C</div>
+                <div class="key" data-key="v">V</div>
+                <div class="key" data-key="b">B</div>
+                <div class="key" data-key="n">N</div>
+                <div class="key" data-key="m">M</div>
+                <div class="key" data-key=","><span class="shift-char">[</span><span class="main-char">,</span></div>
+                <div class="key" data-key="."><span class="shift-char">]</span><span class="main-char">.</span></div>
+                <div class="key" data-key="/"><span class="shift-char">?</span><span class="main-char">/</span></div>
+                <div class="key key-inverse" data-key="INVERSE">INV</div>
+                <div class="key key-shift-r" data-key="Shift" data-modifier="shift">SHIFT</div>
+            </div>
+
+            <!-- Row 5: Space bar -->
+            <div class="row">
+                <div class="key key-space" data-key=" ">SPACE</div>
+            </div>
+        </div>
+
+        <!-- Console keys on the right -->
+        <div class="console-keys">
+            <div class="console-key reset" data-key="RESET">RESET</div>
+            <div class="console-key option" data-key="OPTION">OPTION</div>
+            <div class="console-key select" data-key="SELECT">SELECT</div>
+            <div class="console-key start" data-key="START">START</div>
+            <div class="console-key help" data-key="F5">HELP</div>
+        </div>
+    </div>
+
+    <!-- Function keys -->
+    <div class="func-keys">
+        <div class="func-key" data-key="F1">F1</div>
+        <div class="func-key" data-key="F2">F2</div>
+        <div class="func-key" data-key="F3">F3</div>
+        <div class="func-key" data-key="F4">F4</div>
+        <div class="func-key" data-key="LOAD">LOAD</div>
+        <div class="func-key" data-key="SAVE">SAVE</div>
+    </div>
+
+    <div class="help-text">
+        <ul>
+            <li>BREAK = Pause/Break</li>
+            <li>HELP = F5</li>
+            <li>Arrow keys work</li>
+        </ul>
+    </div>
+
+    <script>
+        let ws;
+        let modifiers = { shift: false, ctrl: false };
+
+        function connect() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+            ws.onopen = () => {
+                document.getElementById('status').classList.add('connected');
+                console.log('WebSocket connected');
+            };
+
+            ws.onclose = () => {
+                document.getElementById('status').classList.remove('connected');
+                console.log('WebSocket disconnected, reconnecting...');
+                setTimeout(connect, 2000);
+            };
+
+            ws.onerror = (e) => {
+                console.error('WebSocket error:', e);
+            };
+        }
+
+        function sendKey(type, key) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const msg = {
+                    type: type,
+                    keys: {
+                        chars: key,
+                        modifiers: {
+                            shift: modifiers.shift,
+                            ctrl: modifiers.ctrl,
+                            commodore: false
+                        }
+                    }
+                };
+                ws.send(JSON.stringify(msg));
+            }
+        }
+
+        function handleKeyDown(element) {
+            const key = element.dataset.key;
+            const modifier = element.dataset.modifier;
+
+            element.classList.add('active');
+
+            if (modifier) {
+                modifiers[modifier] = true;
+                return;
+            }
+
+            sendKey('key-down', key);
+        }
+
+        function handleKeyUp(element) {
+            const key = element.dataset.key;
+            const modifier = element.dataset.modifier;
+
+            element.classList.remove('active');
+
+            if (modifier) {
+                modifiers[modifier] = false;
+                return;
+            }
+
+            sendKey('key-up', key);
+        }
+
+        // Touch events for all keys
+        document.querySelectorAll('.key, .console-key, .func-key').forEach(key => {
+            key.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleKeyDown(key);
+            });
+
+            key.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handleKeyUp(key);
+            });
+
+            key.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                handleKeyDown(key);
+            });
+
+            key.addEventListener('mouseup', (e) => {
+                e.preventDefault();
+                handleKeyUp(key);
+            });
+
+            key.addEventListener('mouseleave', (e) => {
+                if (key.classList.contains('active')) {
+                    handleKeyUp(key);
+                }
+            });
+        });
+
+        // Physical keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+
+            let key = e.key;
+            if (e.key === 'Control') modifiers.ctrl = true;
+            if (e.key === 'Shift') modifiers.shift = true;
+
+            // Map arrow keys to Atari cursor control
+            if (e.key === 'ArrowUp') key = 'ArrowUp';
+            else if (e.key === 'ArrowDown') key = 'ArrowDown';
+            else if (e.key === 'ArrowLeft') key = 'ArrowLeft';
+            else if (e.key === 'ArrowRight') key = 'ArrowRight';
+
+            sendKey('key-down', key);
+            e.preventDefault();
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'Control') modifiers.ctrl = false;
+            if (e.key === 'Shift') modifiers.shift = false;
+
+            sendKey('key-up', e.key);
+            e.preventDefault();
+        });
+
+        // Connect on load
+        connect();
+    </script>
+</body>
+</html>
