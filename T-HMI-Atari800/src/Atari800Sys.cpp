@@ -393,9 +393,9 @@ void Atari800Sys::scanKeyboard() {
 
     // Get console keys and send to GTIA
     uint8_t consoleState = keyboard->getConsoleKeys();
-    gtia.setConsoleKey(0x01, (consoleState & 0x01) != 0); // START
-    gtia.setConsoleKey(0x02, (consoleState & 0x02) != 0); // SELECT
-    gtia.setConsoleKey(0x04, (consoleState & 0x04) != 0); // OPTION
+    gtia.setConsoleKey(0, (consoleState & 0x01) != 0); // START = bit 0
+    gtia.setConsoleKey(1, (consoleState & 0x02) != 0); // SELECT = bit 1
+    gtia.setConsoleKey(2, (consoleState & 0x04) != 0); // OPTION = bit 2
   }
 
   // Update joystick
