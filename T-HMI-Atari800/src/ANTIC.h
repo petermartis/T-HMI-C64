@@ -122,6 +122,7 @@ class ANTIC {
 private:
   uint8_t *ram;
   const uint8_t *osRom;          // OS ROM for character set access
+  const bool *selfTestEnabled;   // Pointer to self-test ROM enabled flag
   uint16_t *bitmap;            // Output bitmap (ATARI_WIDTH x ATARI_HEIGHT)
   DisplayDriver *display;      // Display driver (ST7789V etc.)
   AtariPalette palette;        // Atari 256-color palette
@@ -192,7 +193,7 @@ public:
   uint8_t dmaCycles;
 
   ANTIC();
-  void init(uint8_t *ram, const uint8_t *osRom, GTIA *gtia);
+  void init(uint8_t *ram, const uint8_t *osRom, GTIA *gtia, const bool *selfTestEnabled);
   void reset();
 
   // Register access

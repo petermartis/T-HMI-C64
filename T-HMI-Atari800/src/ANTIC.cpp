@@ -49,16 +49,17 @@ static const struct {
     {1, 40, false},  // F: 320 pixels, 1 scanline, hires (GR.8)
 };
 
-ANTIC::ANTIC() : ram(nullptr), osRom(nullptr), bitmap(nullptr), display(nullptr), gtia(nullptr) {
+ANTIC::ANTIC() : ram(nullptr), osRom(nullptr), selfTestEnabled(nullptr), bitmap(nullptr), display(nullptr), gtia(nullptr) {
   cntRefreshs = 0;
   reset();
 }
 
-void ANTIC::init(uint8_t *ram, const uint8_t *osRom, GTIA *gtia) {
+void ANTIC::init(uint8_t *ram, const uint8_t *osRom, GTIA *gtia, const bool *selfTestEnabled) {
   PlatformManager::getInstance().log(LOG_INFO, ATAG, "init() starting");
   this->ram = ram;
   this->osRom = osRom;
   this->gtia = gtia;
+  this->selfTestEnabled = selfTestEnabled;
 
   // Initialize palette (deferred from constructor to avoid FP during static init)
   palette.init();
@@ -211,15 +212,21 @@ uint8_t ANTIC::fetchDisplayListByte() {
   if (!(dmactl & DMACTL_DL)) {
     return 0;
   }
-  uint8_t byte = ram[displayListPC & 0xFFFF];
+  // Use ROM-aware read for display list (self-test has DL in ROM)
+  uint8_t byte = readMemWithROM(displayListPC & 0xFFFF);
   displayListPC++;
   dmaCycles++;
   return byte;
 }
 
-// Read byte from memory, using OS ROM for $C000-$FFFF range
-// This is used for character set access which needs ROM data
+// Read byte from memory, using OS ROM for character set and self-test areas
+// This is used for character set access and display list reads
 inline uint8_t ANTIC::readMemWithROM(uint16_t addr) {
+  // Self-test ROM at $5000-$57FF (when enabled via PORTB bit 7 = 0)
+  if (selfTestEnabled && *selfTestEnabled && addr >= 0x5000 && addr < 0x5800 && osRom != nullptr) {
+    // Self-test is at $D000-$D7FF in OS ROM file (offset 0x1000 from start)
+    return osRom[addr - 0x5000 + 0x1000];
+  }
   // OS ROM covers $C000-$FFFF when enabled
   // Character set is typically at $E000 (chbase=$E0)
   if (addr >= 0xC000 && osRom != nullptr) {
@@ -354,7 +361,8 @@ void ANTIC::drawCharacterMode2() {
 
   int xpos = 0;
   for (int col = 0; col < 40 && xpos < ATARI_WIDTH; col++) {
-    uint8_t charCode = ram[(memScan + col) & 0xFFFF];
+    // Use ROM-aware read for screen data (self-test has screen in ROM)
+    uint8_t charCode = readMemWithROM((memScan + col) & 0xFFFF);
     bool charInvert = (charCode & 0x80) != 0;
     charCode &= 0x7F;
 
@@ -403,7 +411,8 @@ void ANTIC::drawCharacterMode4() {
 
   int xpos = 0;
   for (int col = 0; col < 40 && xpos < ATARI_WIDTH; col++) {
-    uint8_t charCode = ram[(memScan + col) & 0xFFFF];
+    // Use ROM-aware read for screen data (self-test has screen in ROM)
+    uint8_t charCode = readMemWithROM((memScan + col) & 0xFFFF);
     // Read character data from ROM
     uint8_t charData = readMemWithROM((charBase + (charCode & 0x7F) * 8 + charRow) & 0xFFFF);
 
@@ -439,7 +448,8 @@ void ANTIC::drawCharacterMode6() {
 
   int xpos = 0;
   for (int col = 0; col < 20 && xpos < ATARI_WIDTH; col++) {
-    uint8_t charCode = ram[(memScan + col) & 0xFFFF];
+    // Use ROM-aware read for screen data (self-test has screen in ROM)
+    uint8_t charCode = readMemWithROM((memScan + col) & 0xFFFF);
     // Read character data from ROM
     uint8_t charData = readMemWithROM((charBase + (charCode & 0x3F) * 8 + charRow) & 0xFFFF);
 
@@ -491,7 +501,7 @@ void ANTIC::drawBitmapModeD() {
 
   int xpos = 0;
   for (int byte = 0; byte < 40 && xpos < ATARI_WIDTH; byte++) {
-    uint8_t data = ram[(memScan + byte) & 0xFFFF];
+    uint8_t data = readMemWithROM((memScan + byte) & 0xFFFF);
 
     // Each byte contains 4 pixels (2 bits each)
     for (int pixel = 0; pixel < 4 && xpos < ATARI_WIDTH; pixel++) {
@@ -522,7 +532,7 @@ void ANTIC::drawBitmapModeE() {
 
   int xpos = 0;
   for (int byte = 0; byte < 40 && xpos < ATARI_WIDTH; byte++) {
-    uint8_t data = ram[(memScan + byte) & 0xFFFF];
+    uint8_t data = readMemWithROM((memScan + byte) & 0xFFFF);
 
     // Each byte contains 4 pixels (2 bits each)
     for (int pixel = 0; pixel < 4 && xpos < ATARI_WIDTH; pixel++) {
@@ -550,7 +560,7 @@ void ANTIC::drawBitmapModeF() {
 
   int xpos = 0;
   for (int byte = 0; byte < 40 && xpos < ATARI_WIDTH; byte++) {
-    uint8_t data = ram[(memScan + byte) & 0xFFFF];
+    uint8_t data = readMemWithROM((memScan + byte) & 0xFFFF);
 
     // Each byte contains 8 pixels
     for (int bit = 7; bit >= 0 && xpos < ATARI_WIDTH; bit--) {
@@ -686,13 +696,13 @@ void ANTIC::refresh() {
           "COLPF0=%02X COLPF1=%02X COLPF2=%02X COLPF3=%02X",
           gtia->getPlayfieldColor(0), gtia->getPlayfieldColor(1),
           gtia->getPlayfieldColor(2), gtia->getPlayfieldColor(3));
-      // Dump display list and screen memory
+      // Dump display list and screen memory (use ROM-aware reads for self-test)
       PlatformManager::getInstance().log(LOG_INFO, ATAG,
           "DL: %02X %02X %02X %02X %02X %02X %02X %02X",
-          ram[dlist], ram[dlist+1], ram[dlist+2], ram[dlist+3],
-          ram[dlist+4], ram[dlist+5], ram[dlist+6], ram[dlist+7]);
+          readMemWithROM(dlist), readMemWithROM(dlist+1), readMemWithROM(dlist+2), readMemWithROM(dlist+3),
+          readMemWithROM(dlist+4), readMemWithROM(dlist+5), readMemWithROM(dlist+6), readMemWithROM(dlist+7));
       // Get screen address from LMS instruction (typically at dlist+3)
-      uint16_t screenAddr = ram[dlist+4] | (ram[dlist+5] << 8);
+      uint16_t screenAddr = readMemWithROM(dlist+4) | (readMemWithROM(dlist+5) << 8);
       // Dump first 3 lines of screen memory (40 chars each)
       PlatformManager::getInstance().log(LOG_INFO, ATAG,
           "Scr@%04X L0: %02X %02X %02X %02X %02X %02X %02X %02X",
