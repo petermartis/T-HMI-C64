@@ -752,7 +752,8 @@ void ANTIC::drawScanline() {
       memScan += bytesPerLine;
     }
     // For bitmap modes, advance memory scan every line
-    if (!isCharMode) {
+    // But NOT for blank lines (mode 0) - they don't fetch screen data
+    if (!isCharMode && currentMode != 0) {
       memScan += bytesPerLine;
     }
   } else {
