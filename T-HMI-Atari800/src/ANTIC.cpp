@@ -791,29 +791,20 @@ void ANTIC::refresh() {
           "COLPF0=%02X COLPF1=%02X COLPF2=%02X COLPF3=%02X",
           gtia->getPlayfieldColor(0), gtia->getPlayfieldColor(1),
           gtia->getPlayfieldColor(2), gtia->getPlayfieldColor(3));
-      // Dump display list and screen memory (use ROM-aware reads for self-test)
+      // Dump more display list bytes to see mode 7 LMS instructions
       PlatformManager::getInstance().log(LOG_INFO, ATAG,
-          "DL: %02X %02X %02X %02X %02X %02X %02X %02X",
+          "DL@%04X: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
+          dlist,
           readMemWithROM(dlist), readMemWithROM(dlist+1), readMemWithROM(dlist+2), readMemWithROM(dlist+3),
-          readMemWithROM(dlist+4), readMemWithROM(dlist+5), readMemWithROM(dlist+6), readMemWithROM(dlist+7));
-      // Get screen address from LMS instruction (typically at dlist+3)
-      uint16_t screenAddr = readMemWithROM(dlist+4) | (readMemWithROM(dlist+5) << 8);
-      // Dump first 3 lines of screen memory (40 chars each)
+          readMemWithROM(dlist+4), readMemWithROM(dlist+5), readMemWithROM(dlist+6), readMemWithROM(dlist+7),
+          readMemWithROM(dlist+8), readMemWithROM(dlist+9), readMemWithROM(dlist+10), readMemWithROM(dlist+11),
+          readMemWithROM(dlist+12), readMemWithROM(dlist+13), readMemWithROM(dlist+14), readMemWithROM(dlist+15));
       PlatformManager::getInstance().log(LOG_INFO, ATAG,
-          "Scr@%04X L0: %02X %02X %02X %02X %02X %02X %02X %02X",
-          screenAddr, ram[screenAddr], ram[screenAddr+1], ram[screenAddr+2],
-          ram[screenAddr+3], ram[screenAddr+4], ram[screenAddr+5],
-          ram[screenAddr+6], ram[screenAddr+7]);
-      PlatformManager::getInstance().log(LOG_INFO, ATAG,
-          "Scr L1: %02X %02X %02X %02X %02X %02X %02X %02X",
-          ram[screenAddr+40], ram[screenAddr+41], ram[screenAddr+42],
-          ram[screenAddr+43], ram[screenAddr+44], ram[screenAddr+45],
-          ram[screenAddr+46], ram[screenAddr+47]);
-      PlatformManager::getInstance().log(LOG_INFO, ATAG,
-          "Scr L2: %02X %02X %02X %02X %02X %02X %02X %02X",
-          ram[screenAddr+80], ram[screenAddr+81], ram[screenAddr+82],
-          ram[screenAddr+83], ram[screenAddr+84], ram[screenAddr+85],
-          ram[screenAddr+86], ram[screenAddr+87]);
+          "DL+16: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
+          readMemWithROM(dlist+16), readMemWithROM(dlist+17), readMemWithROM(dlist+18), readMemWithROM(dlist+19),
+          readMemWithROM(dlist+20), readMemWithROM(dlist+21), readMemWithROM(dlist+22), readMemWithROM(dlist+23),
+          readMemWithROM(dlist+24), readMemWithROM(dlist+25), readMemWithROM(dlist+26), readMemWithROM(dlist+27),
+          readMemWithROM(dlist+28), readMemWithROM(dlist+29), readMemWithROM(dlist+30), readMemWithROM(dlist+31));
       // Also show memScan and chactl
       PlatformManager::getInstance().log(LOG_INFO, ATAG,
           "memScan=%04X chactl=%02X", memScan, chactl);
