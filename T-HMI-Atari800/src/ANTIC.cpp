@@ -245,22 +245,33 @@ void ANTIC::setModeLineParams(uint8_t mode) {
   isCharMode = modeParams[modeIdx].isChar;
   rowInMode = 0;
 
+  // Determine pixels per byte based on mode
+  // Modes 6,7: 20-column modes with 16-pixel wide characters (double-width)
+  // Modes 2,3,4,5: 40-column modes with 8-pixel wide characters
+  // Bitmap modes: 8 pixels per byte for hires, 4 for multicolor (doubled to 8)
+  uint8_t pixelsPerByte;
+  if (modeIdx == 6 || modeIdx == 7) {
+    pixelsPerByte = 16;  // 20-column double-width character modes
+  } else {
+    pixelsPerByte = 8;   // Standard 40-column or bitmap modes
+  }
+
   // Adjust bytes per line based on playfield width in dmactl
   // Narrow = 80%, Standard = 100%, Wide = 120% of base width
   uint8_t playfieldWidth = dmactl & DMACTL_PLAYFIELD;
   switch (playfieldWidth) {
-    case DMACTL_NARROW:  // 0x01 - Narrow playfield (32 chars for 40-col modes)
+    case DMACTL_NARROW:  // 0x01 - Narrow playfield
       bytesPerLine = (standardBytes * 4) / 5;  // 80%
       charsPerLine = bytesPerLine;
-      // Narrow is centered: (320 - 256) / 2 = 32 pixels offset for 40-col modes
-      xOffset = (ATARI_WIDTH - bytesPerLine * 8) / 2;
+      // Calculate centered offset based on actual pixel width
+      xOffset = (ATARI_WIDTH - bytesPerLine * pixelsPerByte) / 2;
       break;
-    case DMACTL_STANDARD:  // 0x02 - Standard playfield (40 chars)
+    case DMACTL_STANDARD:  // 0x02 - Standard playfield
       bytesPerLine = standardBytes;
       charsPerLine = bytesPerLine;
       xOffset = 0;
       break;
-    case DMACTL_WIDE:  // 0x03 - Wide playfield (48 chars, clips at edges)
+    case DMACTL_WIDE:  // 0x03 - Wide playfield (clips at edges)
       bytesPerLine = (standardBytes * 6) / 5;  // 120%
       charsPerLine = bytesPerLine;
       xOffset = 0;  // Wide extends past edges, no offset
