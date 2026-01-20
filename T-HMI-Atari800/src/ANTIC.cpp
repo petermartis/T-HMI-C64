@@ -517,12 +517,10 @@ void ANTIC::drawCharacterMode6() {
     // Use ROM-aware read for screen data (self-test has screen in ROM)
     uint8_t charCode = readMemWithROM((memScan + memScanOffset + col) & 0xFFFF);
 
-    // Mode 6/7 uses 6-bit character codes (0-63) with internal encoding
-    // Internal codes need to be mapped to ROM positions by adding 0x20:
-    // - Internal 0x00-0x1F → ROM 0x20-0x3F (space, punctuation, numbers)
-    // - Internal 0x20-0x3F → ROM 0x40-0x5F (@ and uppercase A-Z)
+    // Mode 6/7 uses 6-bit character codes (0-63)
+    // The Altirra character set has uppercase letters at positions 0x21-0x3A,
+    // which is directly accessible by mode 6/7's 6-bit codes
     uint8_t charIdx = charCode & 0x3F;
-    charIdx = (charIdx + 0x20) & 0x7F;  // Map internal code to ROM position
 
     // Read character data from ROM
     uint8_t charData = readMemWithROM((charBase + charIdx * 8 + charRow) & 0xFFFF);
