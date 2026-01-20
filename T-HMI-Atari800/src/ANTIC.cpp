@@ -124,6 +124,7 @@ void ANTIC::reset() {
   isCharMode = false;
   bytesPerLine = 0;
   charsPerLine = 0;
+  memScanOffset = 0;
   xOffset = 0;
   pixelsPerByte = 1;
 
@@ -262,23 +263,28 @@ void ANTIC::setModeLineParams(uint8_t mode) {
 
   // charsPerLine controls how many characters are RENDERED (playfield width)
   // Narrow = 80%, Standard = 100%, Wide = 120% of base width
+  // memScanOffset is the number of bytes to skip for centering (narrow playfield)
   uint8_t playfieldWidth = dmactl & DMACTL_PLAYFIELD;
   switch (playfieldWidth) {
     case DMACTL_NARROW:  // 0x01 - Narrow playfield
       charsPerLine = (standardBytes * 4) / 5;  // 80% (32 for mode 2, 16 for mode 7)
+      memScanOffset = (standardBytes - charsPerLine) / 2;  // Skip left margin bytes
       // Calculate centered offset based on actual pixel width
       xOffset = (ATARI_WIDTH - charsPerLine * pixelsPerByte) / 2;
       break;
     case DMACTL_STANDARD:  // 0x02 - Standard playfield
       charsPerLine = standardBytes;
+      memScanOffset = 0;
       xOffset = 0;
       break;
     case DMACTL_WIDE:  // 0x03 - Wide playfield (clips at edges)
       charsPerLine = (standardBytes * 6) / 5;  // 120%
+      memScanOffset = 0;
       xOffset = 0;  // Wide extends past edges, no offset
       break;
     default:  // 0x00 - No playfield
       charsPerLine = 0;
+      memScanOffset = 0;
       xOffset = 0;
       break;
   }
@@ -408,7 +414,7 @@ void ANTIC::drawCharacterMode2() {
   int xpos = xOffset;
   for (int col = 0; col < charsPerLine && xpos < ATARI_WIDTH; col++) {
     // Use ROM-aware read for screen data (self-test has screen in ROM)
-    uint8_t charCode = readMemWithROM((memScan + col) & 0xFFFF);
+    uint8_t charCode = readMemWithROM((memScan + memScanOffset + col) & 0xFFFF);
     bool charInvert = (charCode & 0x80) != 0;
     charCode &= 0x7F;
 
@@ -465,7 +471,7 @@ void ANTIC::drawCharacterMode4() {
   int xpos = xOffset;
   for (int col = 0; col < charsPerLine && xpos < ATARI_WIDTH; col++) {
     // Use ROM-aware read for screen data (self-test has screen in ROM)
-    uint8_t charCode = readMemWithROM((memScan + col) & 0xFFFF);
+    uint8_t charCode = readMemWithROM((memScan + memScanOffset + col) & 0xFFFF);
     // Read character data from ROM
     uint8_t charData = readMemWithROM((charBase + (charCode & 0x7F) * 8 + charRow) & 0xFFFF);
 
@@ -509,7 +515,7 @@ void ANTIC::drawCharacterMode6() {
   int xpos = xOffset;
   for (int col = 0; col < charsPerLine && xpos < ATARI_WIDTH; col++) {
     // Use ROM-aware read for screen data (self-test has screen in ROM)
-    uint8_t charCode = readMemWithROM((memScan + col) & 0xFFFF);
+    uint8_t charCode = readMemWithROM((memScan + memScanOffset + col) & 0xFFFF);
 
     // Mode 6/7 uses 6-bit character codes (0-63)
     // When screen data contains ATASCII codes (e.g., 0x52 for 'R' with color bits),
@@ -580,7 +586,7 @@ void ANTIC::drawBitmapModeD() {
   // Use charsPerLine for rendering (playfield width), not bytesPerLine (memory width)
   int xpos = xOffset;
   for (int byte = 0; byte < charsPerLine && xpos < ATARI_WIDTH; byte++) {
-    uint8_t data = readMemWithROM((memScan + byte) & 0xFFFF);
+    uint8_t data = readMemWithROM((memScan + memScanOffset + byte) & 0xFFFF);
 
     // Each byte contains 4 pixels (2 bits each)
     for (int pixel = 0; pixel < 4 && xpos < ATARI_WIDTH; pixel++) {
@@ -619,7 +625,7 @@ void ANTIC::drawBitmapModeE() {
   // Use charsPerLine for rendering (playfield width), not bytesPerLine (memory width)
   int xpos = xOffset;
   for (int byte = 0; byte < charsPerLine && xpos < ATARI_WIDTH; byte++) {
-    uint8_t data = readMemWithROM((memScan + byte) & 0xFFFF);
+    uint8_t data = readMemWithROM((memScan + memScanOffset + byte) & 0xFFFF);
 
     // Each byte contains 4 pixels (2 bits each)
     for (int pixel = 0; pixel < 4 && xpos < ATARI_WIDTH; pixel++) {
@@ -654,7 +660,7 @@ void ANTIC::drawBitmapModeF() {
   // Use charsPerLine for rendering (playfield width), not bytesPerLine (memory width)
   int xpos = xOffset;
   for (int byte = 0; byte < charsPerLine && xpos < ATARI_WIDTH; byte++) {
-    uint8_t data = readMemWithROM((memScan + byte) & 0xFFFF);
+    uint8_t data = readMemWithROM((memScan + memScanOffset + byte) & 0xFFFF);
 
     // Each byte contains 8 pixels
     for (int bit = 7; bit >= 0 && xpos < ATARI_WIDTH; bit--) {

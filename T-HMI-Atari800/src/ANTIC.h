@@ -156,6 +156,7 @@ private:
   bool isCharMode;             // Character mode vs bitmap mode
   uint8_t bytesPerLine;        // Bytes of screen data per line (standard width for memory layout)
   uint8_t charsPerLine;        // Characters to render (adjusted for playfield width)
+  uint8_t memScanOffset;       // Offset into line for narrow playfield centering
   uint16_t xOffset;            // Starting X offset for centering narrow playfield
   uint8_t pixelsPerByte;       // Pixels per byte of data
 
