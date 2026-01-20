@@ -338,7 +338,11 @@ void ANTIC::drawCharacterMode2() {
 
   uint16_t charBase = chbase << 8;
   uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
-  uint8_t charRow = rowInMode;
+
+  // Scale rowInMode to character ROM row (0-7) based on mode height
+  // Mode 2 = 8 scanlines, Mode 3 = 10 scanlines
+  uint8_t modeHeight = modeParams[currentMode].scanlines;
+  uint8_t charRow = (modeHeight > 8) ? (rowInMode * 8 / modeHeight) : rowInMode;
 
   // Apply character control
   bool invert = (chactl & CHACTL_INVERT) != 0;
@@ -391,7 +395,11 @@ void ANTIC::drawCharacterMode4() {
 
   uint16_t charBase = chbase << 8;
   uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
-  uint8_t charRow = rowInMode;
+
+  // Scale rowInMode to character ROM row (0-7) based on mode height
+  // Mode 4 = 8 scanlines, Mode 5 = 16 scanlines
+  uint8_t modeHeight = modeParams[currentMode].scanlines;
+  uint8_t charRow = (modeHeight > 8) ? (rowInMode * 8 / modeHeight) : rowInMode;
 
   int xpos = 0;
   for (int col = 0; col < 40 && xpos < ATARI_WIDTH; col++) {
@@ -423,7 +431,11 @@ void ANTIC::drawCharacterMode6() {
 
   uint16_t charBase = chbase << 8;
   uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
-  uint8_t charRow = rowInMode;
+
+  // Scale rowInMode to character ROM row (0-7) based on mode height
+  // Mode 6 = 8 scanlines, Mode 7 = 16 scanlines
+  uint8_t modeHeight = modeParams[currentMode].scanlines;
+  uint8_t charRow = (modeHeight > 8) ? (rowInMode * 8 / modeHeight) : rowInMode;
 
   int xpos = 0;
   for (int col = 0; col < 20 && xpos < ATARI_WIDTH; col++) {
