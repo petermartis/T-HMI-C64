@@ -505,6 +505,19 @@ void ANTIC::drawCharacterMode6() {
   uint8_t modeHeight = modeParams[currentMode].scanlines;
   uint8_t charRow = (modeHeight > 8) ? (rowInMode * 8 / modeHeight) : rowInMode;
 
+  // Debug: log mode 6/7 memScan and first few bytes (only first scanline of each char row)
+  static uint8_t mode67DbgCount = 0;
+  if (rowInMode == 0 && ++mode67DbgCount >= 50) {
+    mode67DbgCount = 0;
+    uint8_t b0 = readMemWithROM(memScan);
+    uint8_t b1 = readMemWithROM(memScan + 1);
+    uint8_t b2 = readMemWithROM(memScan + 2);
+    uint8_t b3 = readMemWithROM(memScan + 3);
+    PlatformManager::getInstance().log(LOG_INFO, ATAG,
+        "Mode%d memScan=%04X: %02X %02X %02X %02X chbase=%02X",
+        currentMode, memScan, b0, b1, b2, b3, chbase);
+  }
+
   // Start at xOffset for playfield centering (narrow playfield)
   int xpos = xOffset;
   for (int col = 0; col < charsPerLine && xpos < ATARI_WIDTH; col++) {
