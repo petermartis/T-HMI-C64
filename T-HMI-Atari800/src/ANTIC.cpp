@@ -505,26 +505,24 @@ void ANTIC::drawCharacterMode6() {
   uint8_t modeHeight = modeParams[currentMode].scanlines;
   uint8_t charRow = (modeHeight > 8) ? (rowInMode * 8 / modeHeight) : rowInMode;
 
-  // Debug: log mode 6/7 memScan and first few bytes (only first scanline of each char row)
-  static uint8_t mode67DbgCount = 0;
-  if (rowInMode == 0 && ++mode67DbgCount >= 50) {
-    mode67DbgCount = 0;
-    uint8_t b0 = readMemWithROM(memScan);
-    uint8_t b1 = readMemWithROM(memScan + 1);
-    uint8_t b2 = readMemWithROM(memScan + 2);
-    uint8_t b3 = readMemWithROM(memScan + 3);
-    PlatformManager::getInstance().log(LOG_INFO, ATAG,
-        "Mode%d memScan=%04X: %02X %02X %02X %02X chbase=%02X",
-        currentMode, memScan, b0, b1, b2, b3, chbase);
-  }
-
   // Start at xOffset for playfield centering (narrow playfield)
   int xpos = xOffset;
   for (int col = 0; col < charsPerLine && xpos < ATARI_WIDTH; col++) {
     // Use ROM-aware read for screen data (self-test has screen in ROM)
     uint8_t charCode = readMemWithROM((memScan + col) & 0xFFFF);
+
+    // Mode 6/7 uses 6-bit character codes (0-63)
+    // When screen data contains ATASCII codes (e.g., 0x52 for 'R' with color bits),
+    // masking with 0x3F gives character indices like 0x12.
+    // These need to be remapped to the uppercase letter region (0x41-0x5A) of the character ROM.
+    // Character indices 0x01-0x1A map to letters A-Z (add 0x40 to get to uppercase region)
+    uint8_t charIdx = charCode & 0x3F;
+    if (charIdx >= 0x01 && charIdx <= 0x1A) {
+      charIdx += 0x40;  // Remap to uppercase letter region
+    }
+
     // Read character data from ROM
-    uint8_t charData = readMemWithROM((charBase + (charCode & 0x3F) * 8 + charRow) & 0xFFFF);
+    uint8_t charData = readMemWithROM((charBase + charIdx * 8 + charRow) & 0xFFFF);
 
     // Color selection based on bits 6-7
     uint8_t colorSelect = (charCode >> 6) & 0x03;
