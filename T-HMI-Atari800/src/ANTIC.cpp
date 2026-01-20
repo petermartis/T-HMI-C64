@@ -246,10 +246,6 @@ void ANTIC::setModeLineParams(uint8_t mode) {
   isCharMode = modeParams[modeIdx].isChar;
   rowInMode = 0;
 
-  // bytesPerLine is always the STANDARD width - this is how screen memory is organized
-  // regardless of playfield width setting (memory layout doesn't change)
-  bytesPerLine = standardBytes;
-
   // Determine pixels per byte based on mode
   // Modes 6,7: 20-column modes with 16-pixel wide characters (double-width)
   // Modes 2,3,4,5: 40-column modes with 8-pixel wide characters
@@ -261,28 +257,32 @@ void ANTIC::setModeLineParams(uint8_t mode) {
     pixelsPerByte = 8;   // Standard 40-column or bitmap modes
   }
 
-  // charsPerLine controls how many characters are RENDERED (playfield width)
+  // Playfield width determines how many bytes ANTIC fetches per line
   // Narrow = 80%, Standard = 100%, Wide = 120% of base width
-  // memScanOffset is the number of bytes to skip for centering (narrow playfield)
+  // The screen memory IS stored at this width (not standard width with margins)
   uint8_t playfieldWidth = dmactl & DMACTL_PLAYFIELD;
   switch (playfieldWidth) {
     case DMACTL_NARROW:  // 0x01 - Narrow playfield
-      charsPerLine = (standardBytes * 4) / 5;  // 80% (32 for mode 2, 16 for mode 7)
-      memScanOffset = (standardBytes - charsPerLine) / 2;  // Skip left margin bytes
-      // Calculate centered offset based on actual pixel width
+      bytesPerLine = (standardBytes * 4) / 5;  // 80% (32 for mode 2, 16 for mode 7)
+      charsPerLine = bytesPerLine;
+      memScanOffset = 0;  // No offset - data is stored at narrow width
+      // Center the display on screen
       xOffset = (ATARI_WIDTH - charsPerLine * pixelsPerByte) / 2;
       break;
     case DMACTL_STANDARD:  // 0x02 - Standard playfield
+      bytesPerLine = standardBytes;
       charsPerLine = standardBytes;
       memScanOffset = 0;
       xOffset = 0;
       break;
     case DMACTL_WIDE:  // 0x03 - Wide playfield (clips at edges)
-      charsPerLine = (standardBytes * 6) / 5;  // 120%
+      bytesPerLine = (standardBytes * 6) / 5;  // 120%
+      charsPerLine = bytesPerLine;
       memScanOffset = 0;
       xOffset = 0;  // Wide extends past edges, no offset
       break;
     default:  // 0x00 - No playfield
+      bytesPerLine = 0;
       charsPerLine = 0;
       memScanOffset = 0;
       xOffset = 0;
