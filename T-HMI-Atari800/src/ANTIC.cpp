@@ -257,15 +257,15 @@ void ANTIC::setModeLineParams(uint8_t mode) {
     pixelsPerByte = 8;   // Standard 40-column or bitmap modes
   }
 
-  // Playfield width determines how many bytes ANTIC fetches per line
-  // Narrow = 80%, Standard = 100%, Wide = 120% of base width
-  // The screen memory IS stored at this width (not standard width with margins)
+  // Playfield width determines how many characters are DISPLAYED
+  // But screen memory may still be organized at standard width (especially in ROM)
+  // charsPerLine = what we render, bytesPerLine = how much to advance memScan
   uint8_t playfieldWidth = dmactl & DMACTL_PLAYFIELD;
   switch (playfieldWidth) {
     case DMACTL_NARROW:  // 0x01 - Narrow playfield
-      bytesPerLine = (standardBytes * 4) / 5;  // 80% (32 for mode 2, 16 for mode 7)
-      charsPerLine = bytesPerLine;
-      memScanOffset = 0;  // No offset - data is stored at narrow width
+      charsPerLine = (standardBytes * 4) / 5;  // 80% (32 for mode 2, 16 for mode 7)
+      bytesPerLine = standardBytes;  // Memory still organized at standard width
+      memScanOffset = 0;
       // Center the display on screen
       xOffset = (ATARI_WIDTH - charsPerLine * pixelsPerByte) / 2;
       break;
