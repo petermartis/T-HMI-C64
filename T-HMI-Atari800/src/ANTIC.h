@@ -155,6 +155,8 @@ private:
   uint8_t scanLinesPerMode;    // Number of scanlines for current mode
   bool isCharMode;             // Character mode vs bitmap mode
   uint8_t bytesPerLine;        // Bytes of screen data per line
+  uint8_t charsPerLine;        // Characters to render (adjusted for playfield width)
+  uint16_t xOffset;            // Starting X offset for centering narrow playfield
   uint8_t pixelsPerByte;       // Pixels per byte of data
 
   // Scroll state

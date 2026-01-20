@@ -123,6 +123,8 @@ void ANTIC::reset() {
   scanLinesPerMode = 0;
   isCharMode = false;
   bytesPerLine = 0;
+  charsPerLine = 0;
+  xOffset = 0;
   pixelsPerByte = 1;
 
   hscrolEnabled = false;
@@ -239,9 +241,36 @@ inline uint8_t ANTIC::readMemWithROM(uint16_t addr) {
 void ANTIC::setModeLineParams(uint8_t mode) {
   uint8_t modeIdx = mode & 0x0F;
   scanLinesPerMode = modeParams[modeIdx].scanlines;
-  bytesPerLine = modeParams[modeIdx].bytesPerLine;
+  uint8_t standardBytes = modeParams[modeIdx].bytesPerLine;
   isCharMode = modeParams[modeIdx].isChar;
   rowInMode = 0;
+
+  // Adjust bytes per line based on playfield width in dmactl
+  // Narrow = 80%, Standard = 100%, Wide = 120% of base width
+  uint8_t playfieldWidth = dmactl & DMACTL_PLAYFIELD;
+  switch (playfieldWidth) {
+    case DMACTL_NARROW:  // 0x01 - Narrow playfield (32 chars for 40-col modes)
+      bytesPerLine = (standardBytes * 4) / 5;  // 80%
+      charsPerLine = bytesPerLine;
+      // Narrow is centered: (320 - 256) / 2 = 32 pixels offset for 40-col modes
+      xOffset = (ATARI_WIDTH - bytesPerLine * 8) / 2;
+      break;
+    case DMACTL_STANDARD:  // 0x02 - Standard playfield (40 chars)
+      bytesPerLine = standardBytes;
+      charsPerLine = bytesPerLine;
+      xOffset = 0;
+      break;
+    case DMACTL_WIDE:  // 0x03 - Wide playfield (48 chars, clips at edges)
+      bytesPerLine = (standardBytes * 6) / 5;  // 120%
+      charsPerLine = bytesPerLine;
+      xOffset = 0;  // Wide extends past edges, no offset
+      break;
+    default:  // 0x00 - No playfield
+      bytesPerLine = 0;
+      charsPerLine = 0;
+      xOffset = 0;
+      break;
+  }
 }
 
 void ANTIC::processDisplayList() {
@@ -346,6 +375,11 @@ void ANTIC::drawCharacterMode2() {
   uint16_t charBase = chbase << 8;
   uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
 
+  // Fill entire line with background first (for narrow playfield borders)
+  for (int x = 0; x < ATARI_WIDTH; x++) {
+    line[x] = bgRGB;
+  }
+
   // Scale rowInMode to character ROM row (0-7) based on mode height
   // Mode 2 = 8 scanlines, Mode 3 = 10 scanlines
   uint8_t modeHeight = modeParams[currentMode].scanlines;
@@ -359,8 +393,9 @@ void ANTIC::drawCharacterMode2() {
     charRow = 7 - charRow;
   }
 
-  int xpos = 0;
-  for (int col = 0; col < 40 && xpos < ATARI_WIDTH; col++) {
+  // Start at xOffset for playfield centering (narrow playfield)
+  int xpos = xOffset;
+  for (int col = 0; col < charsPerLine && xpos < ATARI_WIDTH; col++) {
     // Use ROM-aware read for screen data (self-test has screen in ROM)
     uint8_t charCode = readMemWithROM((memScan + col) & 0xFFFF);
     bool charInvert = (charCode & 0x80) != 0;
@@ -404,13 +439,20 @@ void ANTIC::drawCharacterMode4() {
   uint16_t charBase = chbase << 8;
   uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
 
+  // Fill entire line with background first (for narrow playfield borders)
+  uint16_t bgRGB = colors[colorRegs[0]];
+  for (int x = 0; x < ATARI_WIDTH; x++) {
+    line[x] = bgRGB;
+  }
+
   // Scale rowInMode to character ROM row (0-7) based on mode height
   // Mode 4 = 8 scanlines, Mode 5 = 16 scanlines
   uint8_t modeHeight = modeParams[currentMode].scanlines;
   uint8_t charRow = (modeHeight > 8) ? (rowInMode * 8 / modeHeight) : rowInMode;
 
-  int xpos = 0;
-  for (int col = 0; col < 40 && xpos < ATARI_WIDTH; col++) {
+  // Start at xOffset for playfield centering (narrow playfield)
+  int xpos = xOffset;
+  for (int col = 0; col < charsPerLine && xpos < ATARI_WIDTH; col++) {
     // Use ROM-aware read for screen data (self-test has screen in ROM)
     uint8_t charCode = readMemWithROM((memScan + col) & 0xFFFF);
     // Read character data from ROM
@@ -441,13 +483,20 @@ void ANTIC::drawCharacterMode6() {
   uint16_t charBase = chbase << 8;
   uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
 
+  // Fill entire line with background first (for narrow playfield borders)
+  uint16_t bgRGB = colors[gtia->getBackgroundColor()];
+  for (int x = 0; x < ATARI_WIDTH; x++) {
+    line[x] = bgRGB;
+  }
+
   // Scale rowInMode to character ROM row (0-7) based on mode height
   // Mode 6 = 8 scanlines, Mode 7 = 16 scanlines
   uint8_t modeHeight = modeParams[currentMode].scanlines;
   uint8_t charRow = (modeHeight > 8) ? (rowInMode * 8 / modeHeight) : rowInMode;
 
-  int xpos = 0;
-  for (int col = 0; col < 20 && xpos < ATARI_WIDTH; col++) {
+  // Start at xOffset for playfield centering (narrow playfield)
+  int xpos = xOffset;
+  for (int col = 0; col < charsPerLine && xpos < ATARI_WIDTH; col++) {
     // Use ROM-aware read for screen data (self-test has screen in ROM)
     uint8_t charCode = readMemWithROM((memScan + col) & 0xFFFF);
     // Read character data from ROM
@@ -499,8 +548,15 @@ void ANTIC::drawBitmapModeD() {
 
   uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
 
-  int xpos = 0;
-  for (int byte = 0; byte < 40 && xpos < ATARI_WIDTH; byte++) {
+  // Fill entire line with background first (for narrow playfield borders)
+  uint16_t bgRGB = colors[colorRegs[0]];
+  for (int x = 0; x < ATARI_WIDTH; x++) {
+    line[x] = bgRGB;
+  }
+
+  // Start at xOffset for playfield centering (narrow playfield)
+  int xpos = xOffset;
+  for (int byte = 0; byte < bytesPerLine && xpos < ATARI_WIDTH; byte++) {
     uint8_t data = readMemWithROM((memScan + byte) & 0xFFFF);
 
     // Each byte contains 4 pixels (2 bits each)
@@ -530,8 +586,15 @@ void ANTIC::drawBitmapModeE() {
 
   uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
 
-  int xpos = 0;
-  for (int byte = 0; byte < 40 && xpos < ATARI_WIDTH; byte++) {
+  // Fill entire line with background first (for narrow playfield borders)
+  uint16_t bgRGB = colors[colorRegs[0]];
+  for (int x = 0; x < ATARI_WIDTH; x++) {
+    line[x] = bgRGB;
+  }
+
+  // Start at xOffset for playfield centering (narrow playfield)
+  int xpos = xOffset;
+  for (int byte = 0; byte < bytesPerLine && xpos < ATARI_WIDTH; byte++) {
     uint8_t data = readMemWithROM((memScan + byte) & 0xFFFF);
 
     // Each byte contains 4 pixels (2 bits each)
@@ -558,8 +621,14 @@ void ANTIC::drawBitmapModeF() {
 
   uint16_t *line = &bitmap[bitmapLine * ATARI_WIDTH];
 
-  int xpos = 0;
-  for (int byte = 0; byte < 40 && xpos < ATARI_WIDTH; byte++) {
+  // Fill entire line with background first (for narrow playfield borders)
+  for (int x = 0; x < ATARI_WIDTH; x++) {
+    line[x] = bgRGB;
+  }
+
+  // Start at xOffset for playfield centering (narrow playfield)
+  int xpos = xOffset;
+  for (int byte = 0; byte < bytesPerLine && xpos < ATARI_WIDTH; byte++) {
     uint8_t data = readMemWithROM((memScan + byte) & 0xFFFF);
 
     // Each byte contains 8 pixels
