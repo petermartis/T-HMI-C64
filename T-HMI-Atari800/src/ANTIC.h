@@ -147,6 +147,7 @@ private:
   uint8_t currentMode;         // Current display mode
   bool inDisplayList;          // Currently processing display list
   bool dliPending;             // DLI requested
+  bool dliOnThisLine;          // DLI bit was set on current mode line
   bool vbiPending;             // VBI requested
   bool wsyncHalt;              // CPU halted waiting for WSYNC
 

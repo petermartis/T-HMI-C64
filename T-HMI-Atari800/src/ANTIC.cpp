@@ -116,6 +116,7 @@ void ANTIC::reset() {
   currentMode = 0;
   inDisplayList = false;
   dliPending = false;
+  dliOnThisLine = false;
   vbiPending = false;
   wsyncHalt = false;
 
@@ -298,13 +299,8 @@ void ANTIC::processDisplayList() {
   if (modeLineCount == 0) {
     uint8_t instruction = fetchDisplayListByte();
 
-    // Check for DLI on this instruction
-    if (instruction & MODE_DLI) {
-      if (nmien & NMI_DLI) {
-        dliPending = true;
-        nmist &= ~NMI_DLI;
-      }
-    }
+    // Check for DLI on this instruction - will fire at END of mode line
+    dliOnThisLine = (instruction & MODE_DLI) != 0;
 
     hscrolEnabled = (instruction & MODE_HSCROL) != 0;
     vscrolEnabled = (instruction & MODE_VSCROL) != 0;
@@ -743,6 +739,15 @@ void ANTIC::drawScanline() {
     // But NOT for blank lines (mode 0) - they don't fetch screen data
     if (!isCharMode && currentMode != 0) {
       memScan += bytesPerLine;
+    }
+
+    // Trigger DLI at END of mode line (when modeLineCount reaches 0)
+    if (modeLineCount == 0 && dliOnThisLine) {
+      if (nmien & NMI_DLI) {
+        dliPending = true;
+        nmist &= ~NMI_DLI;
+      }
+      dliOnThisLine = false;
     }
   } else {
     drawBlankLine();
